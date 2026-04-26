@@ -184,6 +184,52 @@
   </div>
 </div>
 
+<div id="modal-ing" class="modal-bg">
+  <div class="modal">
+    <h2 id="modal-ing-title" style="font-family:'Playfair Display'; margin-bottom:20px;">Add Ingredient</h2>
+    <form onsubmit="handleSaveIngredient(event)">
+      <input type="hidden" id="ing-id">
+      
+      <label class="form-label">Ingredient Name</label>
+      <input type="text" id="i-name" class="form-input" required placeholder="e.g. Bread Flour">
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="i-cat" class="form-input">
+            <option>Flour & Grains</option><option>Sugars & Sweeteners</option>
+            <option>Dairy & Fats</option><option>Chocolates & Toppings</option>
+            <option>Leavening & Others</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Measurement Unit</label>
+          <select id="i-unit" class="form-input"><option>g</option><option>ml</option><option>pcs</option></select>
+        </div>
+      </div>
+
+      <div style="background:#f9fbf9; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #edf2ed;">
+        <label class="form-label">Purchase Details</label>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label" style="font-size:9px;">Qty Purchased</label><input type="number" step="any" id="i-p-qty" class="form-input" oninput="calcCPU()"></div>
+          <div class="form-group"><label class="form-label" style="font-size:9px;">Price</label><input type="number" step="any" id="i-p-price" class="form-input" oninput="calcCPU()"></div>
+          <div class="form-group"><label class="form-label" style="font-size:9px;">Tax (%)</label><input type="number" step="any" id="i-p-tax" class="form-input" value="0" oninput="calcCPU()"></div>
+        </div>
+        <div style="font-size:12px; font-weight:600; color:var(--sage);">Calculated Cost per Unit: ₱<span id="i-cpu-display">0.00</span></div>
+        <input type="hidden" id="i-cpu">
+      </div>
+
+      <label class="form-label">Initial Stock Qty</label>
+      <input type="number" step="any" id="i-stock" class="form-input" required>
+      
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-ing')">Cancel</button>
+        <button type="submit" class="btn btn-save">Save Ingredient</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="modal-batch" class="modal-bg">
   <div class="modal">
     <h2 id="modal-batch-title" style="font-family:'Playfair Display'; margin-bottom:20px;">New Batch</h2>
@@ -281,6 +327,53 @@ function showPage(p) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+// --- INGREDIENT FUNCTIONS ---
+function calcCPU() {
+  const q = parseFloat(document.getElementById('i-p-qty').value) || 0;
+  const p = parseFloat(document.getElementById('i-p-price').value) || 0;
+  const t = parseFloat(document.getElementById('i-p-tax').value) || 0;
+  const total = p * (1 + (t/100));
+  const cpu = q > 0 ? total / q : 0;
+  document.getElementById('i-cpu-display').innerText = cpu.toFixed(2);
+  document.getElementById('i-cpu').value = cpu;
+}
+
+function openIngModal(id = null) {
+  document.querySelector('#modal-ing form').reset();
+  document.getElementById('i-cpu-display').innerText = "0.00";
+  if (id) {
+    const i = ingredients.find(x => x.id == id);
+    document.getElementById('ing-id').value = i.id;
+    document.getElementById('i-name').value = i.name;
+    document.getElementById('i-cat').value = i.category;
+    document.getElementById('i-unit').value = i.unit;
+    document.getElementById('i-stock').value = i.stock;
+    document.getElementById('i-cpu').value = i.cpu;
+    document.getElementById('i-cpu-display').innerText = i.cpu.toFixed(2);
+    document.getElementById('modal-ing-title').innerText = "Edit Ingredient";
+  } else {
+    document.getElementById('ing-id').value = "";
+    document.getElementById('modal-ing-title').innerText = "Add Ingredient";
+  }
+  openModal('modal-ing');
+}
+
+async function handleSaveIngredient(event) {
+  event.preventDefault();
+  const id = document.getElementById('ing-id').value;
+  const data = {
+    name: document.getElementById('i-name').value,
+    category: document.getElementById('i-cat').value,
+    unit: document.getElementById('i-unit').value,
+    cpu: parseFloat(document.getElementById('i-cpu').value),
+    stock: parseFloat(document.getElementById('i-stock').value)
+  };
+  if (id) await _sb.from('ingredients').update(data).eq('id', id);
+  else await _sb.from('ingredients').insert([data]);
+  closeModal('modal-ing'); loadData();
+}
+
+// --- BATCH FUNCTIONS ---
 function toggleIngredients() {
   const content = document.getElementById('ing-section-content');
   const icon = document.getElementById('ing-toggle-icon');
@@ -322,7 +415,6 @@ function handleBatchSelect() {
 
 function addBatchIngRow(ingId = null, qty = null) {
   const row = document.createElement('div'); row.className = 'form-row ing-usage-row';
-  // Critical fix: Ensure options are generated from the globally loaded ingredients array
   let opts = ingredients.map(i => `<option value="${i.id}" data-cpu="${i.cpu}" ${i.id == ingId ? 'selected' : ''}>${i.name}</option>`).join('');
   row.innerHTML = `<select class="form-input use-sel" style="flex:2;" onchange="calculateBatch()"><option value="">Select</option>${opts}</select><input type="number" step="any" class="form-input use-qty" style="flex:1;" placeholder="Qty" value="${qty || ''}" oninput="calculateBatch()">`;
   document.getElementById('batch-ing-rows').appendChild(row);
@@ -405,21 +497,13 @@ async function handleSaveBatch(event) {
     total_cost: parseFloat(document.getElementById('sum-total').innerText.replace('₱','')),
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value) || 0,
-    markup_percent: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')),
     ingredients_used: ingredientsUsed
   };
   
-  let error;
-  if (id) {
-    const { error: err } = await _sb.from('batches').update(data).eq('id', id);
-    error = err;
-  } else {
-    const { error: err } = await _sb.from('batches').insert([data]);
-    error = err;
-  }
+  if (id) await _sb.from('batches').update(data).eq('id', id);
+  else await _sb.from('batches').insert([data]);
 
-  if (error) alert("Error saving: " + error.message);
-  else { closeModal('modal-batch'); loadData(); }
+  closeModal('modal-batch'); loadData();
 }
 
 function openBatchModal(id = null, duplicate = false) {
@@ -432,17 +516,14 @@ function openBatchModal(id = null, duplicate = false) {
     const b = batches.find(x => x.id == id);
     document.getElementById('batch-id').value = duplicate ? "" : b.id;
     document.getElementById('modal-batch-title').innerText = duplicate ? "Duplicate Batch" : "Edit Batch";
-    
     const nameDropdown = document.getElementById('b-name');
     const isPreset = Array.from(nameDropdown.options).some(opt => opt.value === b.name);
-    
     if (isPreset) { nameDropdown.value = b.name; } 
     else {
         nameDropdown.value = "Others";
         document.getElementById('b-name-manual').style.display = "block";
         document.getElementById('b-name-manual').value = b.name;
     }
-
     document.getElementById('b-destination').value = b.destination || "Online Orders";
     document.getElementById('b-date').value = b.date || "";
     document.getElementById('b-yield').value = b.yield_pcs;
@@ -450,23 +531,21 @@ function openBatchModal(id = null, duplicate = false) {
     document.getElementById('b-overhead').value = b.overhead_cost;
     document.getElementById('b-packaging').value = b.packaging_cost;
     document.getElementById('b-markup').value = b.markup_percent;
-
     if (b.ingredients_used && Array.isArray(b.ingredients_used) && b.ingredients_used.length > 0) {
         b.ingredients_used.forEach(ing => addBatchIngRow(ing.id, ing.qty));
     } else { addBatchIngRow(); }
-    
     handleBatchSelect();
   } else {
     document.getElementById('batch-id').value = "";
     document.getElementById('modal-batch-title').innerText = "New Batch";
     document.getElementById('b-date').value = new Date().toISOString().split('T')[0];
-    // This is the fix: Specifically call addBatchIngRow for new batches
     addBatchIngRow();
     handleBatchSelect();
   }
   openModal('modal-batch');
 }
 
+// --- RENDER FUNCTIONS ---
 function renderBatches() {
   const from = document.getElementById('filter-from').value;
   const to = document.getElementById('filter-to').value;
@@ -482,12 +561,7 @@ function renderBatches() {
     return true;
   });
 
-  document.getElementById('batch-list-container').innerHTML = filtered.map(b => {
-    const totalCost = b.total_cost || 0;
-    const markupPercent = b.markup_percent || 0;
-    const calculatedMarkupValue = b.markup_percent || (totalCost * (markupPercent / 100));
-
-    return `
+  document.getElementById('batch-list-container').innerHTML = filtered.map(b => `
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
@@ -497,24 +571,17 @@ function renderBatches() {
             <span style="font-size:11px; color:var(--text-muted); font-weight:600;">📅 ${b.date || 'No Date'}</span>
           </div>
         </div>
-        <div>
-            <button class="btn btn-sales-trigger" onclick="openSalesModal(${b.id})">+ Record Sales</button>
-        </div>
       </div>
-
       <div class="batch-summary-grid">
         <div><span class="summary-label">Labor</span>₱${(b.labor_cost || 0).toFixed(2)}</div>
         <div><span class="summary-label">Overhead</span>₱${(b.overhead_cost || 0).toFixed(2)}</div>
         <div><span class="summary-label">Packaging</span>₱${(b.packaging_cost || 0).toFixed(2)}</div>
         <div><span class="summary-label">Cafe (10%)</span>₱${(b.cafe_percentage_cost || 0).toFixed(2)}</div>
       </div>
-
       <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:12px; border-top: 1px dashed var(--border); padding-top:15px; font-size:13px;">
         <div>Yield: <b>${b.yield_pcs} pcs</b></div>
-        <div style="color:var(--rose);">Markup Total (${markupPercent}%): <b>₱${calculatedMarkupValue.toFixed(2)}</b></div>
-        <div>Total Batch Cost: <b>₱${totalCost.toFixed(2)}</b></div>
+        <div>Total Batch Cost: <b>₱${b.total_cost.toFixed(2)}</b></div>
       </div>
-
       <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
         <div style="color:var(--sage); font-weight:700;">Price/Pc: ₱${(b.suggested_price || 0).toFixed(2)}</div>
         <div>
@@ -522,12 +589,11 @@ function renderBatches() {
           <button class="action-btn" onclick="openBatchModal(${b.id}, true)">Duplicate</button>
         </div>
       </div>
-    </div>
-    `;
-  }).join('') || '<div class="card" style="text-align:center; color:var(--text-muted);">No batches found matching these filters.</div>';
+    </div>`).join('');
 }
 
 async function deleteItem(tbl, id) { if(confirm("Delete this record?")) { await _sb.from(tbl).delete().eq('id', id); loadData(); } }
+
 function renderDashboard(sData) {
   document.getElementById('d-ing').innerText = ingredients.length;
   document.getElementById('d-batch').innerText = batches.length;
@@ -535,18 +601,14 @@ function renderDashboard(sData) {
   document.getElementById('d-rev').innerText = "₱" + rev.toFixed(2);
   const cost = batches.reduce((a, c) => a + c.total_cost, 0);
   document.getElementById('d-profit').innerText = "₱" + (rev - cost).toFixed(2);
-  const recentList = document.getElementById('recent-batch-list');
-  recentList.innerHTML = batches.slice(0, 5).map(b => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
-      <div><div style="font-weight:600;">${b.name}</div><div style="font-size:12px; color:var(--text-muted);">${b.date || ''} | Yield: ${b.yield_pcs} pcs</div></div>
-      <div style="font-weight:700;">₱${b.total_cost.toFixed(2)}</div>
-    </div>`).join('') || '<p style="color:var(--text-muted);">No batches yet.</p>';
 }
+
 function renderInventory() {
   document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `
     <tr><td>${i.name}</td><td>${i.category}</td><td>${i.unit}</td><td>₱${i.cpu.toFixed(2)}</td><td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td>
     <td><button class="action-btn" onclick="openIngModal(${i.id})">Edit</button> <button class="action-btn btn-del" onclick="deleteItem('ingredients',${i.id})">Del</button></td></tr>`).join('');
 }
+
 function renderSales(sData) {
   const body = document.getElementById('sales-table-body');
   if (body) {
@@ -555,8 +617,8 @@ function renderSales(sData) {
       <td><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
   }
 }
+
 loadData();
-  document.addEventListener("DOMContentLoaded", loadData);
 </script>
 </body>
 </html>
