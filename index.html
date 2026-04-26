@@ -405,7 +405,7 @@ async function handleSaveBatch(event) {
     total_cost: parseFloat(document.getElementById('sum-total').innerText.replace('₱','')),
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value) || 0,
-    markup_value: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')),
+    markup_percent: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')),
     ingredients_used: ingredientsUsed
   };
   
@@ -485,7 +485,7 @@ function renderBatches() {
   document.getElementById('batch-list-container').innerHTML = filtered.map(b => {
     const totalCost = b.total_cost || 0;
     const markupPercent = b.markup_percent || 0;
-    const calculatedMarkupValue = b.markup_value || (totalCost * (markupPercent / 100));
+    const calculatedMarkupValue = b.markup_percent || (totalCost * (markupPercent / 100));
 
     return `
     <div class="card">
