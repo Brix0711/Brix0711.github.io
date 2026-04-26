@@ -220,7 +220,7 @@
     <form onsubmit="handleSaveSales(event)">
       <div id="sales-rows"></div>
       <button type="button" class="btn btn-ghost" style="font-size: 12px; margin-bottom: 15px;" onclick="addSaleRow()">+ Add Item</button>
-      <div class="summary-box" style="background:none; border-top:1px solid var(--border); padding:15px 0 0 0;">
+      <div class="summary-box">
         <div class="summary-item"><span>Total Revenue</span><span id="s-total-rev">₱0.00</span></div>
         <div class="summary-item summary-total" style="color:var(--rose);"><span>Net Profit / Loss</span><span id="s-net">₱0.00</span></div>
       </div>
@@ -257,7 +257,7 @@ function showPage(p) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-/* INVENTORY ACTIONS */
+/* INVENTORY: Returns ALL data to form */
 function openIngModal(id = null) {
   const title = document.getElementById('modal-ing-title');
   if(id) {
@@ -266,6 +266,9 @@ function openIngModal(id = null) {
     document.getElementById('ing-id').value = ing.id;
     document.getElementById('ing-name').value = ing.name;
     document.getElementById('ing-cat').value = ing.category;
+    document.getElementById('ing-unit').value = ing.unit;
+    document.getElementById('ing-cost-buy').value = (ing.cpu * (ing.qty_buy || 1)).toFixed(2);
+    document.getElementById('ing-qty-buy').value = ing.qty_buy || 1;
     document.getElementById('ing-stock').value = ing.stock;
     document.getElementById('ing-low').value = ing.low_stock_threshold;
   } else {
@@ -280,12 +283,13 @@ async function handleSaveIngredient(e) {
   e.preventDefault();
   const id = document.getElementById('ing-id').value;
   const cost = parseFloat(document.getElementById('ing-cost-buy').value);
-  const qty = parseFloat(document.getElementById('ing-qty-buy').value);
+  const qtyBuy = parseFloat(document.getElementById('ing-qty-buy').value);
   const data = { 
     name: document.getElementById('ing-name').value, 
     category: document.getElementById('ing-cat').value, 
     unit: document.getElementById('ing-unit').value, 
-    cpu: cost / qty, 
+    cpu: cost / qtyBuy, 
+    qty_buy: qtyBuy,
     stock: parseFloat(document.getElementById('ing-stock').value), 
     low_stock_threshold: parseFloat(document.getElementById('ing-low').value) 
   };
@@ -294,7 +298,7 @@ async function handleSaveIngredient(e) {
   closeModal('modal-ingr'); loadData();
 }
 
-/* BATCH ACTIONS */
+/* BATCHES: Returns ALL data to form */
 function openBatchModal(id = null) {
   const title = document.getElementById('modal-batch-title');
   document.getElementById('batch-ing-rows').innerHTML = '';
@@ -308,9 +312,8 @@ function openBatchModal(id = null) {
     document.getElementById('b-labor').value = b.labor_cost || 0;
     document.getElementById('b-overhead').value = b.overhead_cost || 0;
     document.getElementById('b-packaging').value = b.packaging_cost || 0;
-    document.getElementById('b-markup').value = b.markup_percent;
+    document.getElementById('b-markup').value = b.markup_percent || 40;
     document.getElementById('b-notes').value = b.notes || "";
-    // Note: Ingredient reconstruction requires a recipes table; for now we start fresh
     addBatchIngRow();
   } else {
     title.innerText = "New Batch";
@@ -343,7 +346,7 @@ function calculateBatch() {
   const overhead = parseFloat(document.getElementById('b-overhead').value) || 0;
   const pkg = parseFloat(document.getElementById('b-packaging').value) || 0;
   const yieldVal = parseFloat(document.getElementById('b-yield').value) || 1;
-  const markup = parseFloat(document.getElementById('b-markup').value) || 0;
+  const markup = parseFloat(document.getElementById('b-markup').value) || 40;
 
   const total = ingTotal + labor + overhead + pkg;
   document.getElementById('sum-ing').innerText = "₱" + ingTotal.toFixed(2);
@@ -375,20 +378,21 @@ async function handleSaveBatch(e) {
   closeModal('modal-batch'); loadData();
 }
 
-/* SALES ACTIONS */
+/* SALES: Fixed Saving Logic and Decimals */
 function openSalesModal(id) {
   activeBatch = batches.find(b => b.id === id);
   document.getElementById('s-title').innerText = `Record Sales – ${activeBatch.name}`;
   document.getElementById('s-subtitle').innerText = `Total Cost: ₱${activeBatch.total_cost.toFixed(2)}`;
   document.getElementById('sales-rows').innerHTML = '';
-  addSaleRow(activeBatch.name); // Pre-fill with Batch Name as requested
+  addSaleRow(activeBatch.name); 
   openModal('modal-sales');
 }
 
 function addSaleRow(prefill = "") {
   const div = document.createElement('div');
   div.className = 'form-row sale-entry';
-  div.innerHTML = `<input type="text" class="form-input s-item" style="flex:2;" placeholder="Item name" value="${prefill}"><input type="number" class="form-input s-qty" style="flex:1;" placeholder="Qty" oninput="updateSalesCalc()"><input type="number" class="form-input s-price" style="flex:1;" placeholder="Price" oninput="updateSalesCalc()">`;
+  // step="any" allows decimal entry for specific pricing
+  div.innerHTML = `<input type="text" class="form-input s-item" style="flex:2;" placeholder="Item name" value="${prefill}"><input type="number" class="form-input s-qty" style="flex:1;" placeholder="Qty" oninput="updateSalesCalc()"><input type="number" step="any" class="form-input s-price" style="flex:1;" placeholder="Price/Each" oninput="updateSalesCalc()">`;
   document.getElementById('sales-rows').appendChild(div);
 }
 
@@ -406,10 +410,11 @@ async function handleSaveSales(e) {
   rows.forEach(r => {
     const qty = parseFloat(r.querySelector('.s-qty').value);
     const prc = parseFloat(r.querySelector('.s-price').value);
+    const name = r.querySelector('.s-item').value;
     if(qty > 0) {
       payload.push({
         batch_id: activeBatch.id,
-        item_name: r.querySelector('.s-item').value,
+        item_name: name, // Fixed key name
         qty_sold: qty,
         unit_price: prc,
         total_revenue: qty * prc
@@ -423,7 +428,7 @@ async function handleSaveSales(e) {
   }
 }
 
-/* RENDER FUNCTIONS */
+/* RENDER HELPERS */
 function renderInventory() {
   document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `
     <tr>
