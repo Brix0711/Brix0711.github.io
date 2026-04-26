@@ -346,7 +346,9 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 // --- FIXED INGREDIENT MODAL LOGIC ---
 function openIngModal(id = null) {
-  document.querySelector('#modal-ing form').reset();
+  const form = document.querySelector('#modal-ing form');
+  form.reset();
+  
   if (id) {
     const ing = ingredients.find(x => x.id == id);
     document.getElementById('ing-id').value = ing.id;
@@ -354,8 +356,10 @@ function openIngModal(id = null) {
     document.getElementById('i-name').value = ing.name;
     document.getElementById('i-category').value = ing.category;
     document.getElementById('i-unit').value = ing.unit;
-    document.getElementById('i-cpu').value = ing.cpu;
     document.getElementById('i-stock').value = ing.stock;
+    // For editing, we assume purchase qty is 1 to show the current CPU as the cost
+    document.getElementById('i-cost-bulk').value = ing.cpu;
+    document.getElementById('i-qty-bulk').value = 1;
   } else {
     document.getElementById('ing-id').value = "";
     document.getElementById('modal-ing-title').innerText = "Add Ingredient";
@@ -366,12 +370,20 @@ function openIngModal(id = null) {
 async function handleSaveIngredient(event) {
   event.preventDefault();
   const id = document.getElementById('ing-id').value;
+  
+  // Calculate Cost Per Unit (CPU)
+  const costBulk = parseFloat(document.getElementById('i-cost-bulk').value) || 0;
+  const qtyBulk = parseFloat(document.getElementById('i-qty-bulk').value) || 1;
+  const calculatedCpu = costBulk / qtyBulk;
+
   const data = {
     name: document.getElementById('i-name').value,
     category: document.getElementById('i-category').value,
     unit: document.getElementById('i-unit').value,
-    cpu: parseFloat(document.getElementById('i-cpu').value),
+    cpu: calculatedCpu, // Saving the calculated unit cost
     stock: parseFloat(document.getElementById('i-stock').value)
+    // If your DB has an 'alert_level' column, add it here:
+    // low_stock_threshold: parseFloat(document.getElementById('i-alert').value)
   };
   
   let error;
