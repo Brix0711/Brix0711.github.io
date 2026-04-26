@@ -65,10 +65,14 @@
   .btn-primary { background: var(--brown-mid); color: white; }
   .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
   .btn-save { background: #4a6d55; color: white; width: 100%; justify-content: center; }
+  .btn-sales { background: #d4856a; color: white; }
 
   .summary-box { background: #f9fbf9; border-radius: 10px; padding: 20px; border: 1px solid #edf2ed; margin-top: 15px; }
   .summary-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
   .summary-total { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; font-weight: 700; font-size: 16px; }
+  
+  .action-btn { padding: 4px 8px; font-size: 11px; cursor: pointer; border-radius: 4px; border: 1px solid var(--border); background: white; }
+  .btn-del { color: #d4856a; }
 </style>
 </head>
 <body>
@@ -76,7 +80,7 @@
 <div class="topbar">
   <div class="brand-block">
     <div class="logo-circle">🍪</div>
-    <div class="brand-text"><h1>SweetTed</h1><p>Cost & Pricing System</p></div>
+    <div class="brand-text"><h1>SweetTed</h1><p>COST & PRICING SYSTEM</p></div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
@@ -111,7 +115,7 @@
     </div>
     <div class="card" style="padding:0; overflow:hidden;">
       <table>
-        <thead><tr><th>Ingredient</th><th>Category</th><th>Unit</th><th>Cost/Unit</th><th>Stock Qty</th><th>Stock Value</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Ingredient</th><th>Category</th><th>Unit</th><th>Cost / Unit</th><th>Stock Qty</th><th>Stock Value</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="ing-table-body"></tbody>
       </table>
     </div>
@@ -129,7 +133,7 @@
     <h2 style="font-family:'Playfair Display'; font-size:24px; margin-bottom:24px;">Sales Tracking</h2>
     <div class="card" style="padding:0; overflow:hidden;">
       <table>
-        <thead><tr><th>Item</th><th>Batch</th><th>Qty Sold</th><th>Price</th><th>Total</th><th>Date</th></tr></thead>
+        <thead><tr><th>Item</th><th>Batch</th><th>Qty Sold</th><th>Price</th><th>Total</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="sales-table-body"></tbody>
       </table>
     </div>
@@ -138,11 +142,12 @@
 
 <div id="modal-ingr" class="modal-bg">
   <div class="modal" style="width: 550px;">
-    <h2 style="font-family:'Playfair Display'; margin-bottom: 20px;">Add Ingredient</h2>
+    <h2 id="modal-ingr-title" style="font-family:'Playfair Display'; margin-bottom: 20px;">Add Ingredient</h2>
     <form onsubmit="handleSaveIngredient(event)">
+      <input type="hidden" id="ing-id">
       <div class="form-row">
         <div class="form-group" style="flex:2;"><label class="form-label">NAME</label><input type="text" id="ing-name" class="form-input" placeholder="e.g. All-purpose flour" required></div>
-        <div class="form-group"><label class="form-label">CATEGORY</label><select id="ing-cat" class="form-input"><option>Flour & Grains</option><option>Dairy</option><option>Sugars</option></select></div>
+        <div class="form-group"><label class="form-label">CATEGORY</label><select id="ing-cat" class="form-input"><option>Flour & Grains</option><option>Dairy</option><option>Sugars</option><option>Fats & Oils</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">COST PER PURCHASE</label><input type="number" step="0.01" id="ing-cost-buy" class="form-input" required></div>
@@ -171,11 +176,8 @@
         <div class="form-group"><label class="form-label">DATE</label><input type="date" id="b-date" class="form-input"></div>
         <div class="form-group"><label class="form-label">YIELD (PCS)</label><input type="number" id="b-yield" class="form-input" placeholder="e.g. 24" oninput="calculateBatch()"></div>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <label class="form-label">INGREDIENTS USED</label>
-        <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:12px;" onclick="addBatchIngRow()">+ Add Ingredient</button>
-      </div>
       <div id="batch-ing-rows"></div>
+      <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:12px; margin-bottom: 10px;" onclick="addBatchIngRow()">+ Add Ingredient</button>
       
       <label class="form-label" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">OTHER COSTS</label>
       <div class="form-row">
@@ -218,7 +220,7 @@
       </div>
       <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:25px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('modal-sales')">Cancel</button>
-        <button type="submit" class="btn" style="background:#d4856a; color:white;">Save Sales Record</button>
+        <button type="submit" class="btn btn-sales">Save Sales Record</button>
       </div>
     </form>
   </div>
@@ -229,25 +231,68 @@ const SUPABASE_URL = 'https://bczzmvhmxrkjvmohqkgx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jR5_T-YuLx1fZ_7x7K6e7w_MXypy-fS';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let ingredients = [], batches = [], activeBatch = null;
+let ingredients = [], batches = [], sales = [], activeBatch = null;
 
 async function loadData() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
   const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
-  ingredients = i || []; batches = b || [];
-  renderDashboard(); renderInventory(); renderBatches();
+  const { data: s } = await _sb.from('sales').select('*, batches(name)').order('created_at', {ascending: false});
+  
+  ingredients = i || []; batches = b || []; sales = s || [];
+  renderDashboard(); renderInventory(); renderBatches(); renderSales();
 }
 
 function showPage(p) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  event.currentTarget.classList.add('active');
+  const activeTab = Array.from(document.querySelectorAll('.nav-tab')).find(t => t.innerText.toLowerCase().includes(p));
+  if(activeTab) activeTab.classList.add('active');
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+/* INGREDIENT ACTIONS */
+function openIngModal(id = null) {
+    const title = document.getElementById('modal-ingr-title');
+    if(id) {
+        title.innerText = "Edit Ingredient";
+        const ing = ingredients.find(x => x.id === id);
+        document.getElementById('ing-id').value = ing.id;
+        document.getElementById('ing-name').value = ing.name;
+        document.getElementById('ing-cat').value = ing.category;
+        document.getElementById('ing-stock').value = ing.stock;
+        document.getElementById('ing-low').value = ing.low_stock_threshold;
+    } else {
+        title.innerText = "Add Ingredient";
+        document.getElementById('ing-id').value = "";
+        document.querySelector('#modal-ingr form').reset();
+    }
+    openModal('modal-ingr');
+}
+
+async function handleSaveIngredient(e) {
+  e.preventDefault();
+  const id = document.getElementById('ing-id').value;
+  const cost = parseFloat(document.getElementById('ing-cost-buy').value) || 0;
+  const qty = parseFloat(document.getElementById('ing-qty-buy').value) || 1;
+  const data = { 
+    name: document.getElementById('ing-name').value, 
+    category: document.getElementById('ing-cat').value, 
+    unit: document.getElementById('ing-unit').value, 
+    cpu: cost / qty, 
+    stock: parseFloat(document.getElementById('ing-stock').value), 
+    low_stock_threshold: parseFloat(document.getElementById('ing-low').value) 
+  };
+  
+  if(id) await _sb.from('ingredients').update(data).eq('id', id);
+  else await _sb.from('ingredients').insert([data]);
+  
+  closeModal('modal-ingr'); loadData();
+}
+
+/* BATCH ACTIONS */
 function openBatchModal() {
   document.getElementById('b-date').valueAsDate = new Date();
   document.getElementById('batch-ing-rows').innerHTML = '';
@@ -258,9 +303,8 @@ function openBatchModal() {
 function addBatchIngRow() {
   const row = document.createElement('div');
   row.className = 'form-row ing-usage-row';
-  row.style.marginBottom = '10px';
   let opts = ingredients.map(ing => `<option value="${ing.id}" data-cpu="${ing.cpu}">${ing.name}</option>`).join('');
-  row.innerHTML = `<select class="form-input use-sel" style="flex:2; margin:0;" onchange="calculateBatch()"><option value="">Select Ingredient</option>${opts}</select><input type="number" class="form-input use-qty" style="flex:1; margin:0;" placeholder="Qty" oninput="calculateBatch()">`;
+  row.innerHTML = `<select class="form-input use-sel" style="flex:2; margin-bottom:10px;" onchange="calculateBatch()"><option value="">Select Ingredient</option>${opts}</select><input type="number" class="form-input use-qty" style="flex:1;" placeholder="Qty" oninput="calculateBatch()">`;
   document.getElementById('batch-ing-rows').appendChild(row);
 }
 
@@ -278,36 +322,89 @@ function calculateBatch() {
   const yieldVal = parseFloat(document.getElementById('b-yield').value) || 1;
   const markup = parseFloat(document.getElementById('b-markup').value) || 0;
   const total = ingTotal + labor + overhead + pkg;
-  document.getElementById('sum-ing').textContent = "₱" + ingTotal.toFixed(2);
-  document.getElementById('sum-labor').textContent = "₱" + labor.toFixed(2);
-  document.getElementById('sum-overhead').textContent = "₱" + overhead.toFixed(2);
-  document.getElementById('sum-pkg').textContent = "₱" + pkg.toFixed(2);
-  document.getElementById('sum-total').textContent = "₱" + total.toFixed(2);
-  document.getElementById('sum-pc').textContent = "₱" + (total/yieldVal).toFixed(2);
-  document.getElementById('sum-suggested').textContent = "₱" + ((total/yieldVal) * (1+(markup/100))).toFixed(2);
+  
+  document.getElementById('sum-ing').innerText = "₱" + ingTotal.toFixed(2);
+  document.getElementById('sum-labor').innerText = "₱" + labor.toFixed(2);
+  document.getElementById('sum-overhead').innerText = "₱" + overhead.toFixed(2);
+  document.getElementById('sum-pkg').innerText = "₱" + pkg.toFixed(2);
+  document.getElementById('sum-total').innerText = "₱" + total.toFixed(2);
+  document.getElementById('sum-pc').innerText = "₱" + (total/yieldVal).toFixed(2);
+  document.getElementById('sum-suggested').innerText = "₱" + ((total/yieldVal) * (1+(markup/100))).toFixed(2);
 }
 
+async function handleSaveBatch(e) {
+  e.preventDefault();
+  const data = { 
+    name: document.getElementById('b-name').value, 
+    date: document.getElementById('b-date').value, 
+    yield_pcs: parseFloat(document.getElementById('b-yield').value), 
+    total_cost: parseFloat(document.getElementById('sum-total').innerText.replace('₱','')), 
+    suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')), 
+    markup_percent: parseFloat(document.getElementById('b-markup').value) 
+  };
+  await _sb.from('batches').insert([data]);
+  closeModal('modal-batch'); loadData();
+}
+
+/* SALES ACTIONS */
 function openSalesModal(id) {
   activeBatch = batches.find(b => b.id === id);
-  document.getElementById('s-title').textContent = `Record Sales – ${activeBatch.name}`;
-  document.getElementById('s-subtitle').textContent = `Total Cost: ₱${activeBatch.total_cost?.toFixed(2)}`;
+  document.getElementById('s-title').innerText = `Record Sales – ${activeBatch.name}`;
+  document.getElementById('s-subtitle').innerText = `Total Cost: ₱${activeBatch.total_cost.toFixed(2)}`;
   document.getElementById('sales-rows').innerHTML = '';
-  addSaleRow(); openModal('modal-sales');
+  addSaleRow(activeBatch.name); // Pre-populated with Batch Name
+  openModal('modal-sales');
 }
 
-function addSaleRow() {
+function addSaleRow(prefill = "") {
   const div = document.createElement('div');
   div.className = 'form-row sale-entry';
-  div.style.marginBottom = '10px';
-  div.innerHTML = `<input type="text" class="form-input s-item" style="flex:2; margin:0;" placeholder="Item name"><input type="number" class="form-input s-qty" style="flex:1; margin:0;" placeholder="Qty" oninput="updateSalesCalc()"><input type="number" class="form-input s-price" style="flex:1; margin:0;" placeholder="Price" oninput="updateSalesCalc()">`;
+  div.innerHTML = `<input type="text" class="form-input s-item" style="flex:2;" placeholder="Item name" value="${prefill}"><input type="number" class="form-input s-qty" style="flex:1;" placeholder="Qty" oninput="updateSalesCalc()"><input type="number" class="form-input s-price" style="flex:1;" placeholder="Price" oninput="updateSalesCalc()">`;
   document.getElementById('sales-rows').appendChild(div);
 }
 
 function updateSalesCalc() {
   let rev = 0;
   document.querySelectorAll('.sale-entry').forEach(r => { rev += (r.querySelector('.s-qty').value * r.querySelector('.s-price').value) || 0; });
-  document.getElementById('s-total-rev').textContent = "₱" + rev.toFixed(2);
-  document.getElementById('s-net').textContent = "₱" + (rev - (activeBatch?.total_cost || 0)).toFixed(2);
+  document.getElementById('s-total-rev').innerText = "₱" + rev.toFixed(2);
+  document.getElementById('s-net').innerText = "₱" + (rev - (activeBatch?.total_cost || 0)).toFixed(2);
+}
+
+async function handleSaveSales(e) {
+    e.preventDefault();
+    const rows = document.querySelectorAll('.sale-entry');
+    const inserts = [];
+    rows.forEach(r => {
+        const qty = parseFloat(r.querySelector('.s-qty').value);
+        const prc = parseFloat(r.querySelector('.s-price').value);
+        if(qty > 0) {
+            inserts.push({
+                batch_id: activeBatch.id,
+                item_name: r.querySelector('.s-item').value,
+                qty_sold: qty,
+                unit_price: prc,
+                total_revenue: qty * prc
+            });
+        }
+    });
+    if(inserts.length > 0) {
+        await _sb.from('sales').insert(inserts);
+        closeModal('modal-sales');
+        loadData();
+    }
+}
+
+/* RENDER FUNCTIONS */
+function renderInventory() {
+  document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `
+    <tr>
+      <td>${i.name}</td><td>${i.category}</td><td>${i.unit}</td><td>₱${i.cpu.toFixed(4)}</td>
+      <td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td><td>OK</td>
+      <td>
+        <button class="action-btn" onclick="openIngModal('${i.id}')">Edit</button>
+        <button class="action-btn btn-del" onclick="deleteItem('ingredients','${i.id}')">Del</button>
+      </td>
+    </tr>`).join('');
 }
 
 function renderBatches() {
@@ -315,40 +412,44 @@ function renderBatches() {
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:start;">
         <div><h3>${b.name}</h3><p style="color:var(--text-muted); font-size:12px;">${b.date} • Yield: ${b.yield_pcs}</p></div>
-        <button class="btn" style="background:var(--rose-bg); color:var(--rose); font-size:12px;" onclick="openSalesModal('${b.id}')">+ Record Sales</button>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-sales" style="font-size:12px;" onclick="openSalesModal('${b.id}')">+ Record Sales</button>
+            <button class="action-btn btn-del" onclick="deleteItem('batches','${b.id}')">Delete</button>
+        </div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:15px; border-top:1px solid #f0f0f0; padding-top:15px;">
-        <div><p class="stat-label">Total Cost</p><b>₱${b.total_cost?.toFixed(2)}</b></div>
+        <div><p class="stat-label">Total Cost</p><b>₱${b.total_cost.toFixed(2)}</b></div>
         <div><p class="stat-label">Cost/Pc</p><b>₱${(b.total_cost/b.yield_pcs).toFixed(2)}</b></div>
-        <div><p class="stat-label">Price</p><b>₱${b.suggested_price?.toFixed(2)}</b></div>
+        <div><p class="stat-label">Price</p><b>₱${b.suggested_price.toFixed(2)}</b></div>
         <div><p class="stat-label">Markup</p><b>${b.markup_percent}%</b></div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function renderInventory() {
-  document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `<tr><td>${i.name}</td><td>${i.category}</td><td>${i.unit}</td><td>₱${i.cpu.toFixed(4)}</td><td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td><td>OK</td><td><button onclick="deleteItem('ingredients','${i.id}')">Del</button></td></tr>`).join('');
+function renderSales() {
+    document.getElementById('sales-table-body').innerHTML = sales.map(s => `
+    <tr>
+        <td>${s.item_name}</td><td>${s.batches?.name || 'N/A'}</td><td>${s.qty_sold}</td>
+        <td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td>
+        <td>${new Date(s.created_at).toLocaleDateString()}</td>
+        <td><button class="action-btn btn-del" onclick="deleteItem('sales','${s.id}')">Del</button></td>
+    </tr>`).join('');
 }
 
 function renderDashboard() {
-  document.getElementById('d-ing').textContent = ingredients.length;
-  document.getElementById('d-batch').textContent = batches.length;
+  document.getElementById('d-ing').innerText = ingredients.length;
+  document.getElementById('d-batch').innerText = batches.length;
+  const totalRev = sales.reduce((acc, curr) => acc + curr.total_revenue, 0);
+  const totalCost = batches.reduce((acc, curr) => acc + curr.total_cost, 0);
+  document.getElementById('d-rev').innerText = "₱" + totalRev.toFixed(2);
+  document.getElementById('d-profit').innerText = "₱" + (totalRev - totalCost).toFixed(2);
 }
 
-async function handleSaveIngredient(e) {
-  e.preventDefault();
-  const cost = parseFloat(document.getElementById('ing-cost-buy').value);
-  const qty = parseFloat(document.getElementById('ing-qty-buy').value);
-  await _sb.from('ingredients').insert([{ name: document.getElementById('ing-name').value, category: document.getElementById('ing-cat').value, unit: document.getElementById('ing-unit').value, cpu: cost / qty, stock: parseFloat(document.getElementById('ing-stock').value), low_stock_threshold: parseFloat(document.getElementById('ing-low').value) }]);
-  closeModal('modal-ingr'); loadData();
-}
-
-async function handleSaveBatch(e) {
-  e.preventDefault();
-  const data = { name: document.getElementById('b-name').value, date: document.getElementById('b-date').value, yield_pcs: parseFloat(document.getElementById('b-yield').value), total_cost: parseFloat(document.getElementById('sum-total').textContent.replace('₱','')), suggested_price: parseFloat(document.getElementById('sum-suggested').textContent.replace('₱','')), markup_percent: parseFloat(document.getElementById('b-markup').value) };
-  await _sb.from('batches').insert([data]);
-  closeModal('modal-batch'); loadData();
+async function deleteItem(table, id) { 
+    if(confirm("Are you sure you want to delete this?")) { 
+        await _sb.from(table).delete().eq('id', id); 
+        loadData(); 
+    } 
 }
 
 loadData();
