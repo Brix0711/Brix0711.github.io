@@ -251,7 +251,45 @@ function showPage(p) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-/* INVENTORY ACTIONS */
+/* INVENTORY ACTIONS - FULLY FIXED SAVE */
+async function handleSaveIngredient(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('ing-id').value;
+  const name = document.getElementById('ing-name').value;
+  const category = document.getElementById('ing-cat').value;
+  const cost_buy = parseFloat(document.getElementById('ing-cost-buy').value) || 0;
+  const qty_buy = parseFloat(document.getElementById('ing-qty-buy').value) || 1;
+  const unit = document.getElementById('ing-unit').value;
+  const stock = parseFloat(document.getElementById('ing-stock').value) || 0;
+  const low_stock_threshold = parseFloat(document.getElementById('ing-low').value) || 0;
+
+  // Calculate CPU (Cost Per Unit)
+  const cpu = cost_buy / qty_buy;
+
+  const data = { 
+    name, category, cost_buy, qty_buy, unit, cpu, stock, low_stock_threshold 
+  };
+
+  try {
+    let result;
+    if (id) {
+      result = await _sb.from('ingredients').update(data).eq('id', id);
+    } else {
+      result = await _sb.from('ingredients').insert([data]);
+    }
+
+    if (result.error) {
+      alert("Error saving: " + result.error.message);
+    } else {
+      closeModal('modal-ingr');
+      loadData();
+    }
+  } catch (err) {
+    alert("Connection Error. Check console.");
+  }
+}
+
 function openIngModal(id = null) {
   const title = document.getElementById('modal-ing-title');
   if(id) {
@@ -273,21 +311,6 @@ function openIngModal(id = null) {
   openModal('modal-ingr');
 }
 
-async function handleSaveIngredient(e) {
-  e.preventDefault();
-  const id = document.getElementById('ing-id').value;
-  const cost = parseFloat(document.getElementById('ing-cost-buy').value);
-  const qtyBuy = parseFloat(document.getElementById('ing-qty-buy').value);
-  const data = { 
-    name: document.getElementById('ing-name').value, category: document.getElementById('ing-cat').value, 
-    unit: document.getElementById('ing-unit').value, cost_buy: cost, qty_buy: qtyBuy, cpu: cost / qtyBuy,
-    stock: parseFloat(document.getElementById('ing-stock').value), low_stock_threshold: parseFloat(document.getElementById('ing-low').value) 
-  };
-  if(id) await _sb.from('ingredients').update(data).eq('id', id);
-  else await _sb.from('ingredients').insert([data]);
-  closeModal('modal-ingr'); loadData();
-}
-
 /* BATCH ACTIONS */
 function openBatchModal(id = null) {
   const title = document.getElementById('modal-batch-title');
@@ -300,10 +323,10 @@ function openBatchModal(id = null) {
     document.getElementById('b-name').value = b.name;
     document.getElementById('b-date').value = b.date;
     document.getElementById('b-yield').value = b.yield_pcs;
-    document.getElementById('b-labor').value = b.labor_cost;
-    document.getElementById('b-overhead').value = b.overhead_cost;
-    document.getElementById('b-packaging').value = b.packaging_cost;
-    document.getElementById('b-markup').value = b.markup_percent;
+    document.getElementById('b-labor').value = b.labor_cost || 0;
+    document.getElementById('b-overhead').value = b.overhead_cost || 0;
+    document.getElementById('b-packaging').value = b.packaging_cost || 0;
+    document.getElementById('b-markup').value = b.markup_percent || 40;
     document.getElementById('b-notes').value = b.notes || "";
     addBatchIngRow(); 
   } else {
@@ -338,7 +361,7 @@ function calculateBatch() {
   const overhead = parseFloat(document.getElementById('b-overhead').value) || 0;
   const pkg = parseFloat(document.getElementById('b-packaging').value) || 0;
   const yieldVal = parseFloat(document.getElementById('b-yield').value) || 1;
-  const markup = parseFloat(document.getElementById('b-markup').value) || 0;
+  const markup = parseFloat(document.getElementById('b-markup').value) || 40;
 
   const total = ingTotal + labor + overhead + pkg;
   document.getElementById('sum-ing').innerText = "₱" + ingTotal.toFixed(2);
@@ -420,7 +443,7 @@ async function handleSaveSales(event) {
   });
   if(payload.length > 0) {
     const { error } = await _sb.from('sales').insert(payload);
-    if(error) alert("Error saving sales: " + error.message);
+    if(error) alert("Error: " + error.message);
     else { closeModal('modal-sales'); loadData(); }
   }
 }
@@ -473,6 +496,8 @@ function renderDashboard(sData) {
   document.getElementById('d-batch').innerText = batches.length;
   const rev = sData.reduce((acc, curr) => acc + curr.total_revenue, 0);
   document.getElementById('d-rev').innerText = "₱" + rev.toFixed(2);
+  const cost = batches.reduce((acc, curr) => acc + curr.total_cost, 0);
+  document.getElementById('d-profit').innerText = "₱" + (rev - cost).toFixed(2);
 }
 
 async function deleteItem(table, id) { 
