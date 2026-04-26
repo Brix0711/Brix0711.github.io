@@ -7,51 +7,61 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --cream: #f4f7f2; --warm-white: #ffffff; --brown-dark: #1e2d24; 
     --brown-mid: #4a6d55; --brown-light: #8eb497; --rose: #d4856a; 
-    --rose-light: #f5e6df; --sage: #5c8d61; --sage-light: #e0ede2;
-    --gold: #b59431; --gold-light: #fcf6e5; --border: #dae5db;
-    --text-main: #233229; --text-muted: #6b7a70; --shadow: 0 2px 12px rgba(46, 68, 54, 0.08);
-    --shadow-lg: 0 8px 32px rgba(46, 68, 54, 0.12); --radius: 12px; --radius-sm: 8px;
+    --sage: #5c8d61; --border: #dae5db; --text-main: #233229;
+    --text-muted: #6b7a70; --shadow: 0 2px 12px rgba(46,68,54,0.08); --radius: 12px;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-main); min-height: 100vh; font-size: 14px; }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-main); font-size: 14px; }
+  
+  /* UI Components */
   .topbar { background: var(--warm-white); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand-icon { width: 32px; height: 32px; background: var(--brown-mid); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
   .brand-name { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--brown-dark); }
   .nav-tabs { display: flex; gap: 4px; }
-  .nav-tab { padding: 8px 16px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500; transition: 0.2s; }
+  .nav-tab { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; }
   .nav-tab.active { background: var(--brown-mid); color: white; }
+
   .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
   .page { display: none; } .page.active { display: block; }
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
-  .card, .stat-card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
-  .stat-val { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
-  .btn { padding: 9px 18px; border-radius: var(--radius-sm); border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--brown-mid); color: white; }
-  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: white; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: var(--cream); padding: 12px; text-align: left; font-size: 11px; color: var(--text-muted); }
-  td { padding: 12px; border-bottom: 1px solid var(--border); }
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+
+  /* Forms & Modals */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
   .modal-bg.open { display: flex; }
-  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 28px; width: 500px; max-height: 90vh; overflow-y: auto; }
-  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--brown-dark); color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; }
+  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 650px; max-height: 90vh; overflow-y: auto; }
+  
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+  
+  .calc-box { background: #f9fbf9; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 20px; }
+  .calc-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #edf2ee; }
+  .calc-total { font-weight: 700; font-size: 16px; color: var(--brown-dark); border: none; margin-top: 10px; }
+
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--brown-mid); color: white; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; color: var(--text-muted); padding: 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px; border-bottom: 1px solid var(--border); }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--brown-dark); color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transition: 0.3s; pointer-events: none; }
   #toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand">
-    <div class="brand-icon">🍪</div>
-    <div><div class="brand-name">SweetTed</div><div style="font-size:10px; color:var(--text-muted)">CLOUD PRICING</div></div>
-  </div>
+  <div class="brand"><div class="brand-icon">🍪</div><div class="brand-name">SweetTed</div></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
     <button class="nav-tab" onclick="showPage('ingredients')">🧂 Inventory</button>
@@ -62,53 +72,112 @@
 
 <div class="main">
   <div class="page active" id="page-dashboard">
-    <div class="section-header">
-      <div class="section-title">Good morning! 🐻</div>
-    </div>
-    <div class="grid-4">
-      <div class="stat-card"><div class="stat-label">Ingredients</div><div class="stat-val" id="d-ingr-count">0</div></div>
-      <div class="stat-card"><div class="stat-label">Total Batches</div><div class="stat-val" id="d-batch-count">0</div></div>
-      <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val" id="d-rev-val">₱0</div></div>
-      <div class="stat-card"><div class="stat-label">Total Profit</div><div class="stat-val" id="d-profit-val">₱0</div></div>
+    <div class="section-header"><div class="section-title">Good morning! 🐻</div></div>
+    <div id="dash-stats"></div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+      <div class="card"><h3>Recent Batches</h3><div id="recent-batches-list"></div></div>
+      <div class="card"><h3>Low Stock</h3><div id="low-stock-list"></div></div>
     </div>
   </div>
 
   <div class="page" id="page-ingredients">
     <div class="section-header">
-      <div class="section-title">Inventory</div>
-      <button class="btn btn-primary" onclick="openIngrModal()">+ Add Ingredient</button>
+      <div class="section-title">Ingredient Inventory</div>
+      <button class="btn btn-primary" onclick="openModal('modal-ingr')">+ Add Ingredient</button>
     </div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Name</th><th>Unit</th><th>Cost/Unit</th><th>Stock</th><th>Actions</th></tr></thead>
-      <tbody id="ingr-body"></tbody></table>
+    <div class="card" style="padding:0">
+      <table>
+        <thead><tr><th>Ingredient</th><th>Category</th><th>Unit</th><th>Cost/Unit</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="ingr-table-body"></tbody>
+      </table>
     </div>
   </div>
 
   <div class="page" id="page-batches">
     <div class="section-header">
       <div class="section-title">Batch Records</div>
-      <button class="btn btn-primary" onclick="openBatchModal()">+ New Batch</button>
+      <button class="btn btn-primary" onclick="openModal('modal-batch')">+ New Batch</button>
     </div>
     <div id="batch-list"></div>
   </div>
 
   <div class="page" id="page-sales">
-    <div class="section-header"><div class="section-title">Sales Records</div></div>
+    <div class="section-header">
+      <div class="section-title">Sales Records</div>
+      <button class="btn btn-primary" onclick="openModal('modal-sale')">+ New Sale</button>
+    </div>
     <div id="sales-list"></div>
   </div>
 </div>
 
 <div class="modal-bg" id="modal-ingr">
   <div class="modal">
-    <h2 class="section-title">Ingredient Details</h2><br>
-    <input type="text" id="in-name" placeholder="Name" style="width:100%; padding:10px; margin-bottom:10px;">
-    <div style="display:flex; gap:10px;">
-      <input type="number" id="in-cost" placeholder="Cost" style="flex:1; padding:10px;">
-      <input type="number" id="in-qty" placeholder="Purchase Qty" style="flex:1; padding:10px;">
-    </div><br>
-    <input type="number" id="in-stock" placeholder="Current Stock" style="width:100%; padding:10px;"><br><br>
-    <button class="btn btn-primary" onclick="saveIngredient()">Save to Cloud</button>
-    <button class="btn" onclick="closeModal('modal-ingr')">Cancel</button>
+    <h2 class="section-title">Add Ingredient</h2><br>
+    <div class="form-grid">
+      <div><label>Name</label><input type="text" id="in-name" placeholder="e.g. All-purpose flour"></div>
+      <div><label>Category</label><select id="in-cat"><option>Flour & Grains</option><option>Dairy</option><option>Sweeteners</option></select></div>
+    </div>
+    <div class="form-grid">
+      <div><label>Cost Per Purchase</label><input type="number" id="in-cost" placeholder="e.g. 55.00"></div>
+      <div><label>Purchase Qty</label><input type="number" id="in-pqty" placeholder="e.g. 1000"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>Current Stock Qty</label><input type="number" id="in-stock" placeholder="e.g. 1000"></div>
+      <div><label>Low Stock Alert At</label><input type="number" id="in-alert" placeholder="e.g. 200"></div>
+    </div>
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ingr')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIngredient()">Save Ingredient</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-batch">
+  <div class="modal">
+    <h2 class="section-title">New Batch</h2><br>
+    <label>Batch Name</label><input type="text" id="b-name" placeholder="e.g. Ube Cheese Pandesal - Batch 1"><br>
+    <div class="form-grid">
+      <div><label>Date</label><input type="text" id="b-date" value="April 25, 2026"></div>
+      <div><label>Yield (pcs)</label><input type="number" id="b-yield" oninput="calcBatch()"></div>
+    </div>
+    <label>Other Costs</label>
+    <div class="form-grid">
+      <div><label>Labor (₱)</label><input type="number" id="b-labor" value="0" oninput="calcBatch()"></div>
+      <div><label>Electricity/OH (₱)</label><input type="number" id="b-overhead" value="0" oninput="calcBatch()"></div>
+      <div><label>Packaging (₱)</label><input type="number" id="b-pack" value="0" oninput="calcBatch()"></div>
+      <div><label>Markup %</label><input type="number" id="b-markup" value="40" oninput="calcBatch()"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-row"><span>Total Batch Cost</span><span id="res-total">₱0.00</span></div>
+      <div class="calc-row"><span style="color:var(--rose)">Cost per piece</span><span id="res-cpp">₱0.00</span></div>
+      <div class="calc-row calc-total"><span>Suggested price (with markup)</span><span id="res-suggested">₱0.00</span></div>
+    </div>
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-batch')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBatch()">Save Batch</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-sale">
+  <div class="modal">
+    <h2 class="section-title">Record Sale</h2><br>
+    <label>Select Batch/Product</label>
+    <select id="s-batch-id" onchange="autoPopulateSale()">
+      <option value="">-- Choose from recorded batches --</option>
+    </select><br><br>
+    <div class="form-grid">
+      <div><label>Price Applied</label><input type="number" id="s-price" readonly></div>
+      <div><label>Qty Sold</label><input type="number" id="s-qty" value="1" oninput="calcSale()"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-row"><span>Total Revenue</span><span id="s-rev">₱0.00</span></div>
+      <div class="calc-row calc-total"><span>Net Profit</span><span id="s-profit">₱0.00</span></div>
+    </div>
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-sale')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSale()">Complete Sale</button>
+    </div>
   </div>
 </div>
 
@@ -122,59 +191,95 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let ingredients = [], batches = [], sales = [];
 
 async function loadData() {
-  const ing = await _sb.from('ingredients').select('*');
-  const bat = await _sb.from('batches').select('*');
-  const sal = await _sb.from('sales').select('*');
+  const { data: i } = await _sb.from('ingredients').select('*').order('name');
+  const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
+  const { data: s } = await _sb.from('sales').select('*').order('created_at', {ascending: false});
   
-  ingredients = ing.data || [];
-  batches = bat.data || [];
-  sales = sal.data || [];
-  
+  ingredients = i || []; batches = b || []; sales = s || [];
   renderAll();
 }
 
 function renderAll() {
-  // Stats
-  document.getElementById('d-ingr-count').textContent = ingredients.length;
-  document.getElementById('d-batch-count').textContent = batches.length;
-  
-  // Ingredients Table
-  const ib = document.getElementById('ingr-body');
-  ib.innerHTML = ingredients.map(i => `
+  // Inventory Table
+  document.getElementById('ingr-table-body').innerHTML = ingredients.map(ing => `
     <tr>
-      <td>${i.name}</td><td>${i.unit || 'g'}</td>
-      <td>₱${(i.cpu || 0).toFixed(2)}</td><td>${i.stock}</td>
-      <td><button onclick="deleteIngr('${i.id}')">❌</button></td>
+      <td><strong>${ing.name}</strong></td>
+      <td><span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px;">${ing.category}</span></td>
+      <td>kg</td><td>₱${(ing.cpu || 0).toFixed(4)}</td><td>${ing.stock}g</td>
+      <td><span style="color:var(--sage)">OK</span></td>
+      <td><button onclick="del('ingredients','${ing.id}')">Del</button></td>
     </tr>
   `).join('');
+
+  // Sales Dropdown Populate
+  const sel = document.getElementById('s-batch-id');
+  sel.innerHTML = '<option value="">-- Select Product --</option>' + 
+    batches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
 }
 
+// Logic for Batch Calculations
+function calcBatch() {
+  const yield = parseFloat(document.getElementById('b-yield').value) || 0;
+  const labor = parseFloat(document.getElementById('b-labor').value) || 0;
+  const oh = parseFloat(document.getElementById('b-overhead').value) || 0;
+  const pack = parseFloat(document.getElementById('b-pack').value) || 0;
+  const markup = parseFloat(document.getElementById('b-markup').value) || 0;
+
+  const totalCost = labor + oh + pack; // Simplified for now
+  const cpp = yield > 0 ? totalCost / yield : 0;
+  const suggested = cpp * (1 + (markup/100));
+
+  document.getElementById('res-total').textContent = '₱' + totalCost.toFixed(2);
+  document.getElementById('res-cpp').textContent = '₱' + cpp.toFixed(2);
+  document.getElementById('res-suggested').textContent = '₱' + suggested.toFixed(2);
+}
+
+// Auto-Populate Sale based on Batch
+function autoPopulateSale() {
+  const batchId = document.getElementById('s-batch-id').value;
+  const batch = batches.find(b => b.id === batchId);
+  if (batch) {
+    document.getElementById('s-price').value = batch.suggested_price;
+    calcSale();
+  }
+}
+
+function calcSale() {
+  const price = parseFloat(document.getElementById('s-price').value) || 0;
+  const qty = parseFloat(document.getElementById('s-qty').value) || 0;
+  const rev = price * qty;
+  document.getElementById('s-rev').textContent = '₱' + rev.toFixed(2);
+}
+
+// Database Actions
 async function saveIngredient() {
-  const name = document.getElementById('in-name').value;
-  const cost = parseFloat(document.getElementById('in-cost').value);
-  const qty = parseFloat(document.getElementById('in-qty').value);
-  const stock = parseFloat(document.getElementById('in-stock').value);
-  const cpu = cost / qty;
-
-  const { error } = await _sb.from('ingredients').insert([{ name, cost, purchase_qty: qty, stock, cpu, unit: 'g' }]);
-  if(!error) { toast("✅ Cloud Updated"); closeModal('modal-ingr'); loadData(); }
+  const payload = {
+    name: document.getElementById('in-name').value,
+    category: document.getElementById('in-cat').value,
+    cost: parseFloat(document.getElementById('in-cost').value),
+    purchase_qty: parseFloat(document.getElementById('in-pqty').value),
+    stock: parseFloat(document.getElementById('in-stock').value),
+    low_alert: parseFloat(document.getElementById('in-alert').value),
+    cpu: parseFloat(document.getElementById('in-cost').value) / parseFloat(document.getElementById('in-pqty').value)
+  };
+  await _sb.from('ingredients').insert([payload]);
+  closeModal('modal-ingr'); loadData(); toast("✅ Ingredient Saved");
 }
 
-async function deleteIngr(id) {
-  await _sb.from('ingredients').delete().eq('id', id);
-  loadData();
+async function saveBatch() {
+  const payload = {
+    name: document.getElementById('b-name').value,
+    yield: parseFloat(document.getElementById('b-yield').value),
+    suggested_price: parseFloat(document.getElementById('res-suggested').textContent.replace('₱',''))
+  };
+  await _sb.from('batches').insert([payload]);
+  closeModal('modal-batch'); loadData(); toast("✅ Batch Recorded");
 }
 
-function showPage(p) {
-  document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
-  event.target.classList.add('active');
-}
-
+async function del(table, id) { if(confirm('Delete?')) { await _sb.from(table).delete().eq('id', id); loadData(); } }
+function showPage(p) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function openIngrModal() { openModal('modal-ingr'); }
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2000); }
 
 loadData();
