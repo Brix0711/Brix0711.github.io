@@ -43,7 +43,7 @@
   .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
   .card h3 { font-family: 'Playfair Display', serif; margin-bottom: 5px; font-size: 18px; }
 
-  .filter-bar { background: var(--warm-white); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+  .filter-bar { background: var(--warm-white); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; }
 
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #fafcfa; }
@@ -74,6 +74,9 @@
   .ing-header { display: flex; justify-content: space-between; align-items: center; background: #f1f7f2; padding: 8px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
   .ing-content { transition: max-height 0.3s ease-out; overflow: hidden; }
   .ing-content.minimized { max-height: 0; margin-bottom: 0; }
+  
+  .batch-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+  .summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -137,15 +140,34 @@
     </div>
 
     <div class="filter-bar">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <label class="form-label" style="margin-bottom:0;">From:</label>
-        <input type="date" id="filter-from" class="form-input" style="margin-bottom:0; width:150px;" onchange="renderBatches()">
+      <div class="filter-group">
+        <label class="form-label">Batch Name</label>
+        <select id="filter-name" class="form-input" style="margin-bottom:0; width:160px;" onchange="renderBatches()">
+          <option value="">All Items</option>
+          <option value="Cookies">Cookies</option>
+          <option value="Cookies Premium">Cookies Premium</option>
+          <option value="Brownies">Brownies</option>
+          <option value="Crinkles">Crinkles</option>
+        </select>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <label class="form-label" style="margin-bottom:0;">To:</label>
-        <input type="date" id="filter-to" class="form-input" style="margin-bottom:0; width:150px;" onchange="renderBatches()">
+      <div class="filter-group">
+        <label class="form-label">Destination</label>
+        <select id="filter-dest" class="form-input" style="margin-bottom:0; width:160px;" onchange="renderBatches()">
+          <option value="">All Destinations</option>
+          <option value="Online Orders">Online Orders</option>
+          <option value="Bevi & Go">Bevi & Go</option>
+          <option value="Personal Consumption">Personal Consumption</option>
+        </select>
       </div>
-      <button class="btn btn-ghost" style="padding:8px 12px;" onclick="clearFilters()">Clear</button>
+      <div class="filter-group">
+        <label class="form-label">From</label>
+        <input type="date" id="filter-from" class="form-input" style="margin-bottom:0; width:140px;" onchange="renderBatches()">
+      </div>
+      <div class="filter-group">
+        <label class="form-label">To</label>
+        <input type="date" id="filter-to" class="form-input" style="margin-bottom:0; width:140px;" onchange="renderBatches()">
+      </div>
+      <button class="btn btn-ghost" style="height:38px;" onclick="clearFilters()">Clear Filters</button>
     </div>
 
     <div id="batch-list-container"></div>
@@ -248,7 +270,7 @@
         <div class="summary-item" style="border-top: 1px dashed #ccc; padding-top: 5px; color: var(--rose); font-weight: 600;">
           <span>Markup Total (₱)</span><span id="sum-markup-val">₱0.00</span>
         </div>
-        <div class="summary-item summary-total"><span>Total Batch Cost</span><span id="sum-total">₱0.00</span></div>
+        <div class="summary-total"><span>Total Batch Cost</span><span id="sum-total">₱0.00</span></div>
         <div class="summary-item" style="color:var(--sage); font-weight:700;"><span>Suggested price / pc</span><span id="sum-suggested">₱0.00</span></div>
       </div>
       <div style="display:flex; gap:10px; margin-top:20px;">
@@ -312,6 +334,8 @@ function toggleIngredients() {
 function clearFilters() {
     document.getElementById('filter-from').value = "";
     document.getElementById('filter-to').value = "";
+    document.getElementById('filter-name').value = "";
+    document.getElementById('filter-dest').value = "";
     renderBatches();
 }
 
@@ -575,18 +599,21 @@ function renderInventory() {
 function renderBatches() {
   const from = document.getElementById('filter-from').value;
   const to = document.getElementById('filter-to').value;
+  const nameFilter = document.getElementById('filter-name').value;
+  const destFilter = document.getElementById('filter-dest').value;
   
   const filtered = batches.filter(b => {
-    if (!from && !to) return true;
     const d = b.date;
     if (from && d < from) return false;
     if (to && d > to) return false;
+    if (nameFilter && b.name !== nameFilter) return false;
+    if (destFilter && b.destination !== destFilter) return false;
     return true;
   });
 
   document.getElementById('batch-list-container').innerHTML = filtered.map(b => `
     <div class="card">
-      <div style="display:flex; justify-content:space-between;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
           <h3>${b.name}</h3>
           <div style="margin-bottom:8px;">
@@ -598,21 +625,29 @@ function renderBatches() {
             <button class="btn btn-sales-trigger" onclick="openSalesModal(${b.id})">+ Record Sales</button>
         </div>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:10px; border-top:1px solid var(--border); padding-top:15px; font-size:13px;">
-        <div>Yield: <b>${b.yield_pcs} pcs</b></div>
-        <div>Cost/Pc: <b>₱${(b.total_cost/b.yield_pcs).toFixed(2)}</b></div>
-        <div style="color:var(--rose);">Markup: <b>₱${(b.markup_value || 0).toFixed(2)}</b></div>
-        <div>Total Cost: <b>₱${b.total_cost.toFixed(2)}</b></div>
+
+      <div class="batch-summary-grid">
+        <div><span class="summary-label">Labor</span>₱${(b.labor_cost || 0).toFixed(2)}</div>
+        <div><span class="summary-label">Overhead</span>₱${(b.overhead_cost || 0).toFixed(2)}</div>
+        <div><span class="summary-label">Packaging</span>₱${(b.packaging_cost || 0).toFixed(2)}</div>
+        <div><span class="summary-label">Cafe (10%)</span>₱${(b.cafe_percentage_cost || 0).toFixed(2)}</div>
       </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:12px; border-top: 1px dashed var(--border); padding-top:15px; font-size:13px;">
+        <div>Yield: <b>${b.yield_pcs} pcs</b></div>
+        <div style="color:var(--rose);">Markup Total: <b>₱${(b.markup_value || 0).toFixed(2)}</b></div>
+        <div>Total Batch Cost: <b>₱${(b.total_cost || 0).toFixed(2)}</b></div>
+      </div>
+
       <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="color:var(--sage); font-weight:700;">Price/Pc: ₱${b.suggested_price.toFixed(2)}</div>
+        <div style="color:var(--sage); font-weight:700;">Price/Pc: ₱${(b.suggested_price || 0).toFixed(2)}</div>
         <div>
           <button class="action-btn" onclick="openBatchModal(${b.id})">Edit</button>
           <button class="action-btn" onclick="openBatchModal(${b.id}, true)">Duplicate</button>
           <button class="action-btn btn-del" onclick="deleteItem('batches',${b.id})">Delete</button>
         </div>
       </div>
-    </div>`).join('') || '<div class="card" style="text-align:center; color:var(--text-muted);">No batches found for this period.</div>';
+    </div>`).join('') || '<div class="card" style="text-align:center; color:var(--text-muted);">No batches found matching these filters.</div>';
 }
 
 function renderSales(sData) {
