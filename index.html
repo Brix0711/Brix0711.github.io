@@ -178,7 +178,12 @@
       <div class="form-row">
         <div class="form-group" style="flex: 2;">
           <label class="form-label">BATCH NAME</label>
-          <input type="text" id="b-name" class="form-input" required>
+          <select id="b-name" class="form-input" onchange="handleBatchSelect()">
+            <option value="">Select Item</option>
+            <option value="Cookies">Cookies</option>
+            <option value="Brownies">Brownies</option>
+            <option value="Crinkles">Crinkles</option>
+          </select>
         </div>
         <div class="form-group" style="flex: 1;">
           <label class="form-label">DESTINATION</label>
@@ -199,16 +204,21 @@
         <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:12px;" onclick="addBatchIngRow()">+ Add Ingredient</button>
       </div>
       <div id="batch-ing-rows"></div>
+      
       <div class="form-row" style="margin-top:15px;">
-        <div class="form-group"><label class="form-label">LABOR (₱)</label><input type="number" id="b-labor" class="form-input" oninput="calculateBatch()"></div>
-        <div class="form-group"><label class="form-label">OVERHEAD (₱)</label><input type="number" id="b-overhead" class="form-input" oninput="calculateBatch()"></div>
-        <div class="form-group"><label class="form-label">PACKAGING (₱)</label><input type="number" id="b-packaging" class="form-input" oninput="calculateBatch()"></div>
+        <div class="form-group"><label class="form-label">LABOR (50%)</label><input type="number" id="b-labor" class="form-input" readonly></div>
+        <div class="form-group"><label class="form-label">OVERHEAD (20%)</label><input type="number" id="b-overhead" class="form-input" readonly></div>
+        <div class="form-group"><label class="form-label">PACKAGING</label><input type="number" id="b-packaging" class="form-input" readonly></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">MARKUP %</label><input type="number" id="b-markup" class="form-input" value="40" oninput="calculateBatch()"></div>
       </div>
       <div class="summary-box">
         <div class="summary-item"><span>Ingredient cost</span><span id="sum-ing">₱0.00</span></div>
+        <div class="summary-item"><span>Labor (50%)</span><span id="sum-labor">₱0.00</span></div>
+        <div class="summary-item"><span>Overhead (20%)</span><span id="sum-overhead">₱0.00</span></div>
+        <div class="summary-item"><span>Packaging</span><span id="sum-packaging">₱0.00</span></div>
+        <div class="summary-item" style="border-top: 1px dashed #ccc; padding-top: 5px;"><span>Cafe Percentage (10%)</span><span id="sum-cafe">₱0.00</span></div>
         <div class="summary-item summary-total"><span>Total Batch Cost</span><span id="sum-total">₱0.00</span></div>
         <div class="summary-item" style="color:var(--sage); font-weight:700;"><span>Suggested price / pc</span><span id="sum-suggested">₱0.00</span></div>
       </div>
@@ -255,7 +265,8 @@ async function loadData() {
 function showPage(p) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
+  const target = document.getElementById('page-'+p);
+  if (target) target.classList.add('active');
   if(event) event.currentTarget.classList.add('active');
 }
 
@@ -263,8 +274,8 @@ function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 /* INVENTORY LOGIC */
-async function handleSaveIngredient(e) {
-  e.preventDefault();
+async function handleSaveIngredient(event) {
+  event.preventDefault();
   const id = document.getElementById('ing-id').value;
   const cb = parseFloat(document.getElementById('ing-cost-buy').value) || 0;
   const qb = parseFloat(document.getElementById('ing-qty-buy').value) || 1;
@@ -295,7 +306,18 @@ function openIngModal(id = null) {
   openModal('modal-ingr');
 }
 
-/* BATCH LOGIC */
+/* BATCH LOGIC - NEW AUTO GENERATION */
+function handleBatchSelect() {
+  const name = document.getElementById('b-name').value;
+  const yieldInput = document.getElementById('b-yield');
+  
+  if (name === "Brownies") yieldInput.value = 12;
+  else if (name === "Crinkles") yieldInput.value = 50;
+  else if (name === "Cookies") yieldInput.value = 10;
+  
+  calculateBatch();
+}
+
 function addBatchIngRow() {
   const row = document.createElement('div'); row.className = 'form-row ing-usage-row';
   let opts = ingredients.map(i => `<option value="${i.id}" data-cpu="${i.cpu}">${i.name}</option>`).join('');
@@ -310,27 +332,47 @@ function calculateBatch() {
     const cpu = sel.options[sel.selectedIndex]?.dataset.cpu || 0;
     ingTotal += cpu * (parseFloat(row.querySelector('.use-qty').value) || 0);
   });
-  const labor = parseFloat(document.getElementById('b-labor').value) || 0;
-  const overhead = parseFloat(document.getElementById('b-overhead').value) || 0;
-  const pkg = parseFloat(document.getElementById('b-packaging').value) || 0;
+
+  // AUTO CALCULATIONS
+  const labor = ingTotal * 0.50;
+  const overhead = ingTotal * 0.20;
+  const packaging = 50;
+  
+  // CAFE PERCENTAGE (10% of Ingredients + Labor + Overhead + Packaging)
+  const baseSubtotal = ingTotal + labor + overhead + packaging;
+  const cafePercentage = baseSubtotal * 0.10;
+
   const yieldV = parseFloat(document.getElementById('b-yield').value) || 1;
   const markup = parseFloat(document.getElementById('b-markup').value) || 40;
   
-  const total = ingTotal + labor + overhead + pkg;
+  // Set values to read-only inputs
+  document.getElementById('b-labor').value = labor.toFixed(2);
+  document.getElementById('b-overhead').value = overhead.toFixed(2);
+  document.getElementById('b-packaging').value = packaging.toFixed(2);
+
+  const total = baseSubtotal + cafePercentage;
+
+  // Update Summary Display
   document.getElementById('sum-ing').innerText = "₱" + ingTotal.toFixed(2);
+  document.getElementById('sum-labor').innerText = "₱" + labor.toFixed(2);
+  document.getElementById('sum-overhead').innerText = "₱" + overhead.toFixed(2);
+  document.getElementById('sum-packaging').innerText = "₱" + packaging.toFixed(2);
+  document.getElementById('sum-cafe').innerText = "₱" + cafePercentage.toFixed(2);
+  
   document.getElementById('sum-total').innerText = "₱" + total.toFixed(2);
   document.getElementById('sum-suggested').innerText = "₱" + ((total / yieldV) * (1 + markup/100)).toFixed(2);
 }
 
-async function handleSaveBatch(e) {
-  e.preventDefault();
+async function handleSaveBatch(event) {
+  event.preventDefault();
   const data = {
     name: document.getElementById('b-name').value,
-    destination: document.getElementById('b-destination').value, // ADDED FIELD
+    destination: document.getElementById('b-destination').value,
     yield_pcs: parseFloat(document.getElementById('b-yield').value),
     labor_cost: parseFloat(document.getElementById('b-labor').value) || 0,
     overhead_cost: parseFloat(document.getElementById('b-overhead').value) || 0,
     packaging_cost: parseFloat(document.getElementById('b-packaging').value) || 0,
+    cafe_percentage_cost: parseFloat(document.getElementById('sum-cafe').innerText.replace('₱','')), // NEW FIELD
     total_cost: parseFloat(document.getElementById('sum-total').innerText.replace('₱','')),
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value) || 40
@@ -371,8 +413,8 @@ function updateSalesCalc() {
   document.getElementById('s-total-rev').innerText = "₱" + rev.toFixed(2);
 }
 
-async function handleSaveSales(e) {
-  e.preventDefault();
+async function handleSaveSales(event) {
+  event.preventDefault();
   const payload = [];
   document.querySelectorAll('.sale-entry').forEach(r => {
     const q = parseFloat(r.querySelector('.s-qty').value);
@@ -439,9 +481,12 @@ function renderBatches() {
 }
 
 function renderSales(sData) {
-  document.getElementById('sales-table-body').innerHTML = sData.map(s => `
-    <tr><td>${s.item_name}</td><td>${s.batches?.name || ''}</td><td>${s.qty_sold}</td><td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td>
-    <td><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
+  const body = document.getElementById('sales-table-body');
+  if (body) {
+    body.innerHTML = sData.map(s => `
+      <tr><td>${s.item_name}</td><td>${s.batches?.name || ''}</td><td>${s.qty_sold}</td><td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td>
+      <td><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
+  }
 }
 
 async function deleteItem(tbl, id) { if(confirm("Delete?")) { await _sb.from(tbl).delete().eq('id', id); loadData(); } }
