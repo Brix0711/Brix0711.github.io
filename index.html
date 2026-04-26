@@ -20,49 +20,55 @@
 
   body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-main); font-size: 14px; }
   
-  /* TOPBAR RESTORED */
+  /* Topbar & Navigation */
   .topbar { background: var(--warm-white); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 70px; position: sticky; top: 0; z-index: 100; }
   .brand-block { display: flex; align-items: center; gap: 12px; }
-  .logo-circle { width: 32px; height: 32px; background: #4a6d55; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-circle { width: 36px; height: 36px; background: #4a6d55; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
   .brand-text h1 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--brown-dark); line-height: 1.1; }
-  .brand-text p { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 600; }
+  .brand-text p { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 600; }
 
   .nav-tabs { display: flex; gap: 8px; }
-  .nav-tab { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-  .nav-tab:hover { background: #f0f4f1; }
+  .nav-tab { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; transition: 0.2s; }
   .nav-tab.active { background: var(--brown-dark); color: white; }
 
   .main { padding: 32px 24px; max-width: 1200px; margin: 0 auto; }
-  .page { display: none; transition: opacity 0.3s; } 
-  .page.active { display: block; }
+  .page { display: none; } .page.active { display: block; }
   
-  /* DASHBOARD SCORECARDS */
+  /* Dashboard Scorecards */
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
   .stat-card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+  .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
   .stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--brown-dark); }
-  .stat-tag { display: inline-block; margin-top: 10px; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .stat-tag { display: inline-block; margin-top: 10px; font-size: 11px; padding: 3px 12px; border-radius: 20px; font-weight: 600; }
   .tag-gold { background: var(--gold-bg); color: var(--gold); }
   .tag-rose { background: var(--rose-bg); color: var(--rose); }
   .tag-green { background: var(--sage-bg); color: var(--sage); }
 
-  /* SIDE-BY-SIDE WIDGETS */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); min-height: 300px; }
-  .card h3 { font-family: 'Playfair Display', serif; margin-bottom: 20px; font-size: 18px; }
+  /* Grid Layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card h3 { font-family: 'Playfair Display'; margin-bottom: 15px; }
 
-  /* TABLE STYLES */
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #fafcfa; }
-  td { padding: 14px 12px; border-bottom: 1px solid #f0f0f0; }
-
-  /* MODALS */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  /* Modals */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(30,45,36,0.6); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
   .modal-bg.open { display: flex; }
-  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 600px; max-height: 90vh; overflow-y: auto; }
-  .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 620px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+  .sub-modal { width: 450px; z-index: 300; }
+
+  input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-top: 4px; font-family: inherit; }
+  label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  .btn { padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
   .btn-primary { background: var(--brown-mid); color: white; }
+  .btn-primary:hover { background: var(--brown-dark); }
   .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+
+  .calc-box { background: #fcfcfc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 20px; }
+  .calc-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .calc-row:last-child { border: none; font-weight: 700; font-size: 16px; color: var(--sage); padding-top: 12px; }
+
+  /* Ingredient List Style */
+  .ing-row { display: flex; justify-content: space-between; align-items: center; background: var(--sage-bg); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -76,10 +82,10 @@
     </div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
-    <button class="nav-tab" onclick="showPage('ingredients')">🧂 Inventory</button>
-    <button class="nav-tab" onclick="showPage('batches')">🍰 Batches</button>
-    <button class="nav-tab" onclick="showPage('sales')">🛒 Sales</button>
+    <button class="nav-tab active" onclick="showPage('dashboard', this)">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showPage('ingredients', this)">🧂 Inventory</button>
+    <button class="nav-tab" onclick="showPage('batches', this)">🍰 Batches</button>
+    <button class="nav-tab" onclick="showPage('sales', this)">🛒 Sales</button>
   </div>
 </div>
 
@@ -100,47 +106,82 @@
     <div class="grid-2">
       <div class="card">
         <h3>Recent Batches</h3>
-        <div id="recent-batches-list" style="text-align:center; padding-top:40px; color:var(--text-muted);">
-          <div style="font-size:40px; margin-bottom:10px;">🍞</div>
-          No batches yet.
-        </div>
+        <div id="recent-batches-list" style="color:var(--text-muted); font-size:13px;">No batches recorded yet.</div>
       </div>
       <div class="card">
         <h3>Low Stock Ingredients</h3>
-        <div id="low-stock-list" style="color:var(--sage); font-weight:500;">
-          ✅ All ingredients are well-stocked!
-        </div>
+        <div id="low-stock-list" style="color:var(--sage); font-weight:600;">✅ All ingredients are well-stocked!</div>
       </div>
     </div>
   </div>
 
   <div class="page" id="page-ingredients">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
       <h2 style="font-family:'Playfair Display'; font-size:24px;">Ingredient Inventory</h2>
       <button class="btn btn-primary" onclick="openModal('modal-ingr')">+ Add Ingredient</button>
     </div>
     <div class="card" style="padding:0; overflow:hidden;">
-      <table>
-        <thead><tr><th>Ingredient</th><th>Category</th><th>Unit</th><th>Cost/Unit</th><th>Stock Qty</th><th>Status</th><th>Actions</th></tr></thead>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead style="background:#fafcfa; border-bottom:1px solid var(--border);">
+          <tr><th style="text-align:left; padding:15px;">Ingredient</th><th>Category</th><th>Unit</th><th>Cost/Unit</th><th>Stock</th><th>Status</th></tr>
+        </thead>
         <tbody id="ing-table-body"></tbody>
       </table>
     </div>
   </div>
+</div>
 
-  <div class="page" id="page-batches">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
-      <h2 style="font-family:'Playfair Display'; font-size:24px;">Batch Records</h2>
-      <button class="btn btn-primary" onclick="openModal('modal-batch')">+ New Batch</button>
+<div class="modal-bg" id="modal-batch">
+  <div class="modal">
+    <h2 style="font-family:'Playfair Display'; margin-bottom:24px;">New Batch</h2>
+    
+    <label>Batch Name</label>
+    <input type="text" id="b-name" placeholder="e.g. Dark Choco Brownies" style="margin-bottom:16px;">
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+      <div><label>Date</label><input type="text" id="b-date" value="April 26, 2026"></div>
+      <div><label>Yield (pcs)</label><input type="number" id="b-yield" placeholder="24" oninput="recalcBatch()"></div>
     </div>
-    <div id="batches-list"></div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <label>Ingredients Used</label>
+      <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="openModal('modal-picker')">+ Add Ingredient</button>
+    </div>
+    <div id="batch-ing-list" style="margin:12px 0; color:var(--text-muted); font-style:italic; font-size:13px;">No ingredients added yet.</div>
+
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:16px;">
+      <div><label>Labor (₱)</label><input type="number" id="b-labor" value="0" oninput="recalcBatch()"></div>
+      <div><label>Overhead (₱)</label><input type="number" id="b-oh" value="0" oninput="recalcBatch()"></div>
+      <div><label>Packaging (₱)</label><input type="number" id="b-pack" value="0" oninput="recalcBatch()"></div>
+    </div>
+
+    <div class="calc-box">
+      <div class="calc-row"><span>Ingredient Total</span><span id="res-ing">₱0.00</span></div>
+      <div class="calc-row"><span>Total Batch Cost</span><span id="res-total">₱0.00</span></div>
+      <div class="calc-row" style="color:var(--rose)"><span>Cost Per Piece</span><span id="res-cpp">₱0.00</span></div>
+      <div class="calc-row"><span>Suggested Price</span><span id="res-sugg">₱0.00</span></div>
+    </div>
+
+    <div style="text-align:right; margin-top:24px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-batch')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBatch()">Save Batch Record</button>
+    </div>
   </div>
+</div>
 
-  <div class="page" id="page-sales">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
-      <h2 style="font-family:'Playfair Display'; font-size:24px;">Sales Tracking</h2>
-      <button class="btn btn-primary">+ Log Sale</button>
+<div class="modal-bg" id="modal-picker" style="z-index:300;">
+  <div class="modal sub-modal">
+    <h2 style="font-family:'Playfair Display'; margin-bottom:20px;">Pick Ingredient</h2>
+    <label>Select Item</label>
+    <select id="p-select"></select>
+    <div style="margin-top:16px;">
+      <label>Quantity Used</label>
+      <input type="number" id="p-qty" placeholder="e.g. 250">
     </div>
-    <div class="card">Tracking your sales data here...</div>
+    <div style="text-align:right; margin-top:24px; display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-picker')">Cancel</button>
+      <button class="btn btn-primary" onclick="addIngredientToBatch()">Add to Recipe</button>
+    </div>
   </div>
 </div>
 
@@ -149,56 +190,85 @@ const SUPABASE_URL = 'https://bczzmvhmxrkjvmohqkgx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jR5_T-YuLx1fZ_7x7K6e7w_MXypy-fS';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let ingredients = [], batches = [];
+let ingredients = [], batches = [], selectedIngredients = [];
 
-async function loadData() {
+async function load() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
   const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
   ingredients = i || []; batches = b || [];
-  renderDashboard();
-  renderInventory();
-}
-
-function showPage(pageId) {
-  // Update Tabs
-  document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-  event.currentTarget.classList.add('active');
   
-  // Update Content
-  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-  document.getElementById('page-' + pageId).classList.add('active');
-}
-
-function renderDashboard() {
+  // Update Dashboard
   document.getElementById('d-ing').textContent = ingredients.length;
   document.getElementById('d-batch').textContent = batches.length;
   
-  if(batches.length > 0) {
-    document.getElementById('recent-batches-list').innerHTML = batches.slice(0,3).map(b => `
-      <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-        <span>${b.name}</span><strong>₱${b.suggested_price.toFixed(2)}</strong>
-      </div>
-    `).join('');
-  }
-}
-
-function renderInventory() {
-  const tbody = document.getElementById('ing-table-body');
-  tbody.innerHTML = ingredients.map(ing => `
+  // Fill Inventory Table
+  document.getElementById('ing-table-body').innerHTML = ingredients.map(ing => `
     <tr>
-      <td style="font-weight:600;">${ing.name}</td>
-      <td><span class="stat-tag tag-gold">${ing.category}</span></td>
-      <td>${ing.unit}</td>
-      <td>₱${ing.cpu.toFixed(4)}</td>
-      <td>${ing.stock} ${ing.unit}</td>
-      <td><span style="color:var(--sage)">● OK</span></td>
-      <td><button class="btn btn-ghost" style="padding:4px 8px">Del</button></td>
+      <td style="padding:15px; font-weight:600;">${ing.name}</td>
+      <td style="text-align:center;"><span class="stat-tag tag-gold">${ing.category}</span></td>
+      <td style="text-align:center;">${ing.unit}</td>
+      <td style="text-align:center;">₱${ing.cpu.toFixed(2)}</td>
+      <td style="text-align:center;">${ing.stock}</td>
+      <td style="text-align:center;"><span style="color:var(--sage)">● OK</span></td>
     </tr>
+  `).join('');
+
+  // Fill Picker Dropdown
+  document.getElementById('p-select').innerHTML = ingredients.map(ing => `
+    <option value="${ing.id}">${ing.name} (₱${ing.cpu.toFixed(2)}/${ing.unit})</option>
   `).join('');
 }
 
-// Initial Load
-loadData();
+function showPage(id, btn) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function addIngredientToBatch() {
+  const id = document.getElementById('p-select').value;
+  const qty = parseFloat(document.getElementById('p-qty').value);
+  const item = ingredients.find(x => x.id === id);
+  
+  if (item && qty) {
+    selectedIngredients.push({ ...item, qty, cost: qty * item.cpu });
+    renderRecipe();
+    closeModal('modal-picker');
+    recalcBatch();
+  }
+}
+
+function renderRecipe() {
+  const container = document.getElementById('batch-ing-list');
+  container.innerHTML = selectedIngredients.map((item, idx) => `
+    <div class="ing-row">
+      <span>${item.name} (${item.qty} ${item.unit})</span>
+      <span>₱${item.cost.toFixed(2)}</span>
+    </div>
+  `).join('');
+}
+
+function recalcBatch() {
+  const ingTotal = selectedIngredients.reduce((sum, i) => sum + i.cost, 0);
+  const labor = parseFloat(document.getElementById('b-labor').value) || 0;
+  const oh = parseFloat(document.getElementById('b-oh').value) || 0;
+  const pack = parseFloat(document.getElementById('b-pack').value) || 0;
+  const yields = parseFloat(document.getElementById('b-yield').value) || 1;
+
+  const total = ingTotal + labor + oh + pack;
+  const cpp = total / yields;
+  
+  document.getElementById('res-ing').textContent = '₱' + ingTotal.toFixed(2);
+  document.getElementById('res-total').textContent = '₱' + total.toFixed(2);
+  document.getElementById('res-cpp').textContent = '₱' + cpp.toFixed(2);
+  document.getElementById('res-sugg').textContent = '₱' + (cpp * 1.4).toFixed(2);
+}
+
+load();
 </script>
 </body>
 </html>
