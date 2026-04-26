@@ -75,7 +75,7 @@
 <div class="topbar">
   <div class="brand-block">
     <div class="logo-circle">🍪</div>
-    <div class="brand-text"><h1>Sweet Ted</h1><p>Cost & Pricing System</p></div>
+    <div class="brand-text"><h1>SweetTed</h1><p>Cost & Pricing System</p></div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
@@ -174,7 +174,22 @@
     <h2 id="modal-batch-title" style="font-family:'Playfair Display'; margin-bottom:20px;">New Batch</h2>
     <form onsubmit="handleSaveBatch(event)">
       <input type="hidden" id="batch-id">
-      <label class="form-label">BATCH NAME</label><input type="text" id="b-name" class="form-input" required>
+      
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label class="form-label">BATCH NAME</label>
+          <input type="text" id="b-name" class="form-input" required>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">DESTINATION</label>
+          <select id="b-destination" class="form-input">
+            <option value="Online Orders">Online Orders</option>
+            <option value="Bevi & Go">Bevi & Go</option>
+            <option value="Personal Consumption">Personal Consumption</option>
+          </select>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group"><label class="form-label">DATE</label><input type="date" id="b-date" class="form-input"></div>
         <div class="form-group"><label class="form-label">YIELD (PCS)</label><input type="number" id="b-yield" class="form-input" oninput="calculateBatch()" required></div>
@@ -310,7 +325,9 @@ function calculateBatch() {
 async function handleSaveBatch(e) {
   e.preventDefault();
   const data = {
-    name: document.getElementById('b-name').value, yield_pcs: parseFloat(document.getElementById('b-yield').value),
+    name: document.getElementById('b-name').value,
+    destination: document.getElementById('b-destination').value, // ADDED FIELD
+    yield_pcs: parseFloat(document.getElementById('b-yield').value),
     labor_cost: parseFloat(document.getElementById('b-labor').value) || 0,
     overhead_cost: parseFloat(document.getElementById('b-overhead').value) || 0,
     packaging_cost: parseFloat(document.getElementById('b-packaging').value) || 0,
@@ -318,8 +335,13 @@ async function handleSaveBatch(e) {
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value) || 40
   };
-  await _sb.from('batches').insert([data]);
-  closeModal('modal-batch'); loadData();
+  
+  const { error } = await _sb.from('batches').insert([data]);
+  if (error) {
+    alert("Error saving: " + error.message);
+  } else {
+    closeModal('modal-batch'); loadData();
+  }
 }
 
 function openBatchModal() {
@@ -370,18 +392,16 @@ function renderDashboard(sData) {
   const cost = batches.reduce((a, c) => a + c.total_cost, 0);
   document.getElementById('d-profit').innerText = "₱" + (rev - cost).toFixed(2);
 
-  // Recent Batches
   const recentList = document.getElementById('recent-batch-list');
   recentList.innerHTML = batches.slice(0, 5).map(b => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
       <div>
         <div style="font-weight:600;">${b.name}</div>
-        <div style="font-size:12px; color:var(--text-muted);">Yield: ${b.yield_pcs} pcs</div>
+        <div style="font-size:12px; color:var(--text-muted);">Yield: ${b.yield_pcs} pcs | ${b.destination || 'Online'}</div>
       </div>
       <div style="font-weight:700;">₱${b.total_cost.toFixed(2)}</div>
     </div>`).join('') || '<p style="color:var(--text-muted);">No batches yet.</p>';
 
-  // Low Stock Alert
   const lowItems = ingredients.filter(i => i.stock <= i.low_stock_threshold);
   const lowStockList = document.getElementById('low-stock-list');
   lowStockList.innerHTML = lowItems.map(i => `
@@ -401,13 +421,19 @@ function renderBatches() {
   document.getElementById('batch-list-container').innerHTML = batches.map(b => `
     <div class="card">
       <div style="display:flex; justify-content:space-between;">
-        <h3>${b.name} (Yield: ${b.yield_pcs})</h3>
+        <div>
+          <h3 style="margin-bottom:4px;">${b.name}</h3>
+          <span style="font-size:12px; background:var(--sage-bg); padding:2px 8px; border-radius:4px; color:var(--sage); font-weight:600;">${b.destination || 'Online Orders'}</span>
+        </div>
         <button class="btn btn-sales-trigger" onclick="openSalesModal(${b.id})">+ Record Sales</button>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:10px;">
-        <div>Label: Total Cost<br><b>₱${b.total_cost.toFixed(2)}</b></div>
-        <div>Label: Price/Pc<br><b>₱${b.suggested_price.toFixed(2)}</b></div>
-        <div><button class="action-btn btn-del" onclick="deleteItem('batches',${b.id})">Delete Batch</button></div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:15px; border-top:1px solid var(--border); padding-top:15px;">
+        <div>Yield: <b>${b.yield_pcs} pcs</b></div>
+        <div>Total Cost: <b>₱${b.total_cost.toFixed(2)}</b></div>
+        <div>Price/Pc: <b>₱${b.suggested_price.toFixed(2)}</b></div>
+      </div>
+      <div style="margin-top:15px; text-align:right;">
+        <button class="action-btn btn-del" onclick="deleteItem('batches',${b.id})">Delete Batch</button>
       </div>
     </div>`).join('');
 }
