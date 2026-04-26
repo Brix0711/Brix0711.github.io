@@ -1,95 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SweetTed | Cost & Pricing System</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  /* Keeping your exact original styling */
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;700&display=swap');
-  :root { --sage: #4a6d55; --cream: #f4f7f2; --border: #dae5db; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); margin: 0; }
-  
-  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-  .logo-block { display: flex; align-items: center; gap: 12px; }
-  .logo { background: var(--sage); color: white; padding: 8px; border-radius: 8px; font-size: 20px; }
-  
-  .nav-btn { background: none; border: none; padding: 10px 15px; cursor: pointer; font-weight: 500; color: #666; }
-  .nav-btn.active { background: #e8eee9; color: var(--sage); border-radius: 6px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SweetTed | Cost & Pricing System</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-  .container { padding: 40px; max-width: 1100px; margin: 0 auto; }
-  .card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-  
-  /* Modal Styles */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-  .modal-overlay.show { display: flex; }
-  .modal { background: white; padding: 30px; border-radius: 16px; width: 500px; max-width: 90%; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f4f7f2; --warm-white: #ffffff; --brown-dark: #1e2d24; 
+      --brown-mid: #4a6d55; --brown-light: #8eb497; --rose: #d4856a; 
+      --rose-bg: #fdf2f0; --sage: #5c8d61; --sage-bg: #f1f7f2;
+      --gold: #b59431; --gold-bg: #fcf9ee; --border: #dae5db;
+      --text-main: #233229; --text-muted: #6b7a70; --shadow: 0 2px 12px rgba(46,68,54,0.08);
+      --radius: 12px;
+    }
 
-  .btn-primary { background: var(--sage); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-  .btn-outline { background: white; border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; cursor: pointer; }
-</style>
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-main); font-size: 14px; }
+    
+    /* TOPBAR */
+    .topbar { background: var(--warm-white); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 70px; position: sticky; top: 0; z-index: 100; }
+    .brand-block { display: flex; align-items: center; gap: 12px; }
+    .logo-circle { width: 32px; height: 32px; background: #4a6d55; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .brand-text h1 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--brown-dark); line-height: 1.1; }
+    .brand-text p { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 600; }
+
+    .nav-tabs { display: flex; gap: 8px; }
+    .nav-tab { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .nav-tab:hover { background: #f0f4f1; }
+    .nav-tab.active { background: var(--brown-dark); color: white; }
+
+    .main { padding: 32px 24px; max-width: 1200px; margin: 0 auto; }
+    .page { display: none; } 
+    .page.active { display: block; }
+    
+    /* DASHBOARD SCORECARDS */
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+    .stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--brown-dark); }
+    .stat-tag { display: inline-block; margin-top: 10px; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+    .tag-gold { background: var(--gold-bg); color: var(--gold); }
+    .tag-rose { background: var(--rose-bg); color: var(--rose); }
+    .tag-green { background: var(--sage-bg); color: var(--sage); }
+
+    /* SIDE-BY-SIDE WIDGETS */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); min-height: 300px; }
+    .card h3 { font-family: 'Playfair Display', serif; margin-bottom: 20px; font-size: 18px; }
+
+    /* TABLE STYLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #fafcfa; }
+    td { padding: 14px 12px; border-bottom: 1px solid #f0f0f0; }
+
+    /* MODALS */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+    .modal-bg.open { display: flex; }
+    .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 500px; max-height: 90vh; overflow-y: auto; position: relative; }
+    
+    /* FORM INPUTS */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; }
+
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+    .btn-primary { background: var(--brown-mid); color: white; }
+    .btn-primary:hover { background: var(--brown-dark); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo-block">
-    <div class="logo">🍪</div>
-    <div>
-      <b style="font-family:'Playfair Display'; font-size:18px;">SweetTed</b><br>
-      <small style="color:#888; font-size:10px; text-transform:uppercase;">Cost & Pricing System</small>
+  <div class="brand-block">
+    <div class="logo-circle">🍪</div>
+    <div class="brand-text">
+      <h1>SweetTed</h1>
+      <p>Cost & Pricing System</p>
     </div>
   </div>
-  <div>
-    <button class="nav-btn active">Dashboard</button>
-    <button class="nav-btn">Inventory</button>
-    <button class="nav-btn">Batches</button>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showPage('ingredients')">🧂 Inventory</button>
+    <button class="nav-tab" onclick="showPage('batches')">🍰 Batches</button>
+    <button class="nav-tab" onclick="showPage('sales')">🛒 Sales</button>
   </div>
 </div>
 
-<div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-    <h1 style="font-family:'Playfair Display';">Good morning! 🐻</h1>
-    <button class="btn-primary" onclick="toggleModal('batchModal', true)">+ New Batch</button>
+<div class="main">
+  <div class="page active" id="page-dashboard">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h1 style="font-family:'Playfair Display'; font-size:28px;">Good morning! 🐻</h1>
+      <button class="btn btn-primary" onclick="openModal('modal-batch')">+ New Batch</button>
+    </div>
+
+    <div class="grid-4">
+      <div class="stat-card"><div class="stat-label">Ingredients</div><div class="stat-val" id="d-ing">0</div><div class="stat-tag tag-gold">in inventory</div></div>
+      <div class="stat-card"><div class="stat-label">Total Batches</div><div class="stat-val" id="d-batch">0</div><div class="stat-tag tag-rose">recorded</div></div>
+      <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val" id="d-rev">₱0.00</div><div class="stat-tag tag-green">from sales</div></div>
+      <div class="stat-card"><div class="stat-label">Total Profit</div><div class="stat-val" id="d-profit">₱0.00</div><div class="stat-tag tag-green">net profit</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Recent Batches</h3>
+        <div id="recent-batches-list" style="color:var(--text-muted);">
+           No batches yet.
+        </div>
+      </div>
+      <div class="card">
+        <h3>Low Stock Ingredients</h3>
+        <div id="low-stock-list" style="color:var(--sage); font-weight:500;">
+          ✅ All ingredients are well-stocked!
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>Recent Activity</h3>
-    <p style="color:#888;">Start by adding your first batch production.</p>
+  <div class="page" id="page-ingredients">
+    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
+      <h2 style="font-family:'Playfair Display'; font-size:24px;">Ingredient Inventory</h2>
+      <button class="btn btn-primary" onclick="openModal('modal-ingr')">+ Add Ingredient</button>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table>
+        <thead><tr><th>Ingredient</th><th>Category</th><th>Unit</th><th>Cost/Unit</th><th>Stock Qty</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="ing-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-batches">
+    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
+      <h2 style="font-family:'Playfair Display'; font-size:24px;">Batch Records</h2>
+      <button class="btn btn-primary" onclick="openModal('modal-batch')">+ New Batch</button>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead><tr><th>Batch Name</th><th>Date</th><th>Price</th><th>Action</th></tr></thead>
+          <tbody id="batch-table-body"></tbody>
+        </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-sales">
+    <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
+      <h2 style="font-family:'Playfair Display'; font-size:24px;">Sales Tracking</h2>
+      <button class="btn btn-primary">+ Log Sale</button>
+    </div>
+    <div class="card">Tracking your sales data here...</div>
   </div>
 </div>
 
-<div class="modal-overlay" id="batchModal">
-  <div class="modal">
-    <h2 style="font-family:'Playfair Display'; margin-bottom:20px;">New Batch</h2>
-    <label style="font-size:12px; font-weight:700;">BATCH NAME</label>
-    <input type="text" id="batchName" placeholder="e.g. Batch #01 - Brownies" style="width:100%; padding:12px; margin:8px 0 20px; border:1px solid var(--border); border-radius:8px;">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:12px; font-weight:700;">INGREDIENTS USED</span>
-      <button class="btn-outline" style="font-size:12px;" onclick="toggleModal('ingModal', true)">+ Add Ingredient</button>
+<div id="modal-ingr" class="modal-bg">
+    <div class="modal">
+      <h3 style="font-family:'Playfair Display'; margin-bottom: 20px;">Add New Ingredient</h3>
+      <form id="form-ingr" onsubmit="handleSaveIngredient(event)">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="ing-name" class="form-input" placeholder="e.g. All Purpose Flour" required>
+        </div>
+        <div class="form-group">
+            <label>Category</label>
+            <input type="text" id="ing-cat" class="form-input" placeholder="e.g. Dry Goods">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label>Unit (g, kg, ml)</label>
+                <input type="text" id="ing-unit" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>Cost per Unit (₱)</label>
+                <input type="number" step="0.0001" id="ing-cpu" class="form-input" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Current Stock</label>
+            <input type="number" id="ing-stock" class="form-input" required>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-primary">Save Ingredient</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-ingr')">Cancel</button>
+        </div>
+      </form>
     </div>
-    
-    <div id="recipeItems" style="margin:15px 0; min-height:40px; color:#999; font-style:italic;">No ingredients added yet.</div>
-
-    <div style="text-align:right; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
-      <button class="btn-outline" onclick="toggleModal('batchModal', false)">Cancel</button>
-      <button class="btn-primary">Save Batch</button>
-    </div>
-  </div>
 </div>
 
-<div class="modal-overlay" id="ingModal" style="z-index:110;">
-  <div class="modal" style="width:400px;">
-    <h3>Add Ingredient to Batch</h3>
-    <select id="ingSelect" style="width:100%; padding:12px; margin-top:10px; border:1px solid var(--border); border-radius:8px;"></select>
-    <input type="number" id="ingQty" placeholder="Quantity used" style="width:100%; padding:12px; margin-top:15px; border:1px solid var(--border); border-radius:8px;">
-    
-    <div style="text-align:right; margin-top:20px;">
-      <button class="btn-outline" onclick="toggleModal('ingModal', false)">Back</button>
-      <button class="btn-primary" onclick="addIngredient()">Add</button>
+<div id="modal-batch" class="modal-bg">
+    <div class="modal">
+      <h3 style="font-family:'Playfair Display'; margin-bottom: 20px;">Create New Batch</h3>
+      <form id="form-batch" onsubmit="handleSaveBatch(event)">
+        <div class="form-group">
+            <label>Batch Name</label>
+            <input type="text" id="batch-name" class="form-input" placeholder="e.g. Dark Choco Batch #1" required>
+        </div>
+        <div class="form-group">
+            <label>Suggested Selling Price (₱)</label>
+            <input type="number" step="0.01" id="batch-price" class="form-input" required>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-primary">Record Batch</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-batch')">Cancel</button>
+        </div>
+      </form>
     </div>
-  </div>
 </div>
 
 <script>
@@ -97,36 +214,126 @@ const SUPABASE_URL = 'https://bczzmvhmxrkjvmohqkgx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jR5_T-YuLx1fZ_7x7K6e7w_MXypy-fS';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let inventory = [];
+let ingredients = [], batches = [];
 
-async function loadInventory() {
-  const { data } = await _sb.from('ingredients').select('*');
-  inventory = data || [];
-  const select = document.getElementById('ingSelect');
-  select.innerHTML = inventory.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+// MODAL CONTROLS
+function openModal(id) {
+    document.getElementById(id).classList.add('open');
 }
 
-function toggleModal(id, show) {
-  document.getElementById(id).classList.toggle('show', show);
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
 }
 
-function addIngredient() {
-  const id = document.getElementById('ingSelect').value;
-  const qty = document.getElementById('ingQty').value;
-  const item = inventory.find(i => i.id === id);
-  
-  const container = document.getElementById('recipeItems');
-  if (container.innerText.includes('No ingredients')) container.innerHTML = '';
-  
-  const div = document.createElement('div');
-  div.style = "display:flex; justify-content:space-between; padding:8px; background:#f9f9f9; margin-bottom:5px; border-radius:6px; font-size:13px;";
-  div.innerHTML = `<span>${item.name} (${qty})</span> <b>₱${(qty * item.cpu).toFixed(2)}</b>`;
-  container.appendChild(div);
-  
-  toggleModal('ingModal', false);
+// NAVIGATION
+function showPage(pageId) {
+  document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
 }
 
-loadInventory();
+// DATA LOADING
+async function loadData() {
+  const { data: i } = await _sb.from('ingredients').select('*').order('name');
+  const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
+  ingredients = i || []; 
+  batches = b || [];
+  renderDashboard();
+  renderInventory();
+  renderBatches();
+}
+
+// RENDERING FUNCTIONS
+function renderDashboard() {
+  document.getElementById('d-ing').textContent = ingredients.length;
+  document.getElementById('d-batch').textContent = batches.length;
+  
+  const recentList = document.getElementById('recent-batches-list');
+  if(batches.length > 0) {
+    recentList.innerHTML = batches.slice(0,3).map(b => `
+      <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+        <span>${b.name}</span><strong>₱${(b.suggested_price || 0).toFixed(2)}</strong>
+      </div>
+    `).join('');
+  } else {
+    recentList.innerHTML = `<div style="text-align:center; padding-top:40px;">🍞 No batches yet.</div>`;
+  }
+}
+
+function renderInventory() {
+  const tbody = document.getElementById('ing-table-body');
+  tbody.innerHTML = ingredients.map(ing => `
+    <tr>
+      <td style="font-weight:600;">${ing.name}</td>
+      <td><span class="stat-tag tag-gold">${ing.category || 'General'}</span></td>
+      <td>${ing.unit}</td>
+      <td>₱${(ing.cpu || 0).toFixed(4)}</td>
+      <td>${ing.stock} ${ing.unit}</td>
+      <td><span style="color:var(--sage)">● OK</span></td>
+      <td><button class="btn btn-ghost" style="padding:4px 8px" onclick="deleteItem('ingredients', '${ing.id}')">Del</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderBatches() {
+    const tbody = document.getElementById('batch-table-body');
+    tbody.innerHTML = batches.map(b => `
+        <tr>
+            <td>${b.name}</td>
+            <td>${new Date(b.created_at).toLocaleDateString()}</td>
+            <td>₱${(b.suggested_price || 0).toFixed(2)}</td>
+            <td><button class="btn btn-ghost" style="padding:4px 8px" onclick="deleteItem('batches', '${b.id}')">Del</button></td>
+        </tr>
+    `).join('');
+}
+
+// DATABASE ACTIONS
+async function handleSaveIngredient(e) {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('ing-name').value,
+        category: document.getElementById('ing-cat').value,
+        unit: document.getElementById('ing-unit').value,
+        cpu: parseFloat(document.getElementById('ing-cpu').value),
+        stock: parseFloat(document.getElementById('ing-stock').value)
+    };
+
+    const { error } = await _sb.from('ingredients').insert([data]);
+    if(error) alert(error.message);
+    else {
+        closeModal('modal-ingr');
+        e.target.reset();
+        loadData();
+    }
+}
+
+async function handleSaveBatch(e) {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('batch-name').value,
+        suggested_price: parseFloat(document.getElementById('batch-price').value)
+    };
+
+    const { error } = await _sb.from('batches').insert([data]);
+    if(error) alert(error.message);
+    else {
+        closeModal('modal-batch');
+        e.target.reset();
+        loadData();
+    }
+}
+
+async function deleteItem(table, id) {
+    if(confirm("Are you sure you want to delete this?")) {
+        const { error } = await _sb.from(table).delete().eq('id', id);
+        if(error) alert(error.message);
+        else loadData();
+    }
+}
+
+// Initial Load
+loadData();
 </script>
 </body>
 </html>
