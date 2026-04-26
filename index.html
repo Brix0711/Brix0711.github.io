@@ -185,37 +185,63 @@
 </div>
 
 <div id="modal-ing" class="modal-bg">
-  <div class="modal">
-    <h2 id="modal-ing-title" style="font-family:'Playfair Display'; margin-bottom:20px;">Add Ingredient</h2>
+  <div class="modal" style="width: 550px;">
+    <h2 id="modal-ing-title" style="font-family:'Playfair Display'; margin-bottom:20px; font-size: 24px;">Add Ingredient</h2>
     <form onsubmit="handleSaveIngredient(event)">
       <input type="hidden" id="ing-id">
-      <div class="form-group">
-        <label class="form-label">NAME</label>
-        <input type="text" id="i-name" class="form-input" required>
-      </div>
+      
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" style="flex: 2;">
+          <label class="form-label">NAME</label>
+          <input type="text" id="i-name" class="form-input" placeholder="e.g. All-purpose flour" required>
+        </div>
+        <div class="form-group" style="flex: 1.5;">
           <label class="form-label">CATEGORY</label>
-          <input type="text" id="i-category" class="form-input" placeholder="e.g. Dairy, Flour">
-        </div>
-        <div class="form-group">
-          <label class="form-label">UNIT</label>
-          <input type="text" id="i-unit" class="form-input" placeholder="e.g. g, kg, ml" required>
+          <select id="i-category" class="form-input">
+            <option value="Flour & Grains">Flour & Grains</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Sweeteners">Sweeteners</option>
+            <option value="Leavening">Leavening</option>
+            <option value="Others">Others</option>
+          </select>
         </div>
       </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">COST PER UNIT (₱)</label>
-          <input type="number" step="any" id="i-cpu" class="form-input" required>
+          <label class="form-label">COST PER PURCHASE</label>
+          <input type="number" step="any" id="i-cost-bulk" class="form-input" placeholder="e.g. 55.00" required>
         </div>
         <div class="form-group">
-          <label class="form-label">INITIAL STOCK</label>
-          <input type="number" step="any" id="i-stock" class="form-input" required>
+          <label class="form-label">PURCHASE QTY</label>
+          <input type="number" step="any" id="i-qty-bulk" class="form-input" placeholder="e.g. 1000" required>
+        </div>
+        <div class="form-group" style="max-width: 100px;">
+          <label class="form-label">UNIT</label>
+          <select id="i-unit" class="form-input">
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="ml">ml</option>
+            <option value="L">L</option>
+            <option value="pcs">pcs</option>
+          </select>
         </div>
       </div>
-      <div style="display:flex; gap:10px; margin-top:20px;">
-        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-ing')">Cancel</button>
-        <button type="submit" class="btn btn-save">Save Ingredient</button>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">CURRENT STOCK QTY</label>
+          <input type="number" step="any" id="i-stock" class="form-input" placeholder="e.g. 1000" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">LOW STOCK ALERT AT</label>
+          <input type="number" step="any" id="i-alert" class="form-input" placeholder="e.g. 200">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px; justify-content: flex-end;">
+        <button type="button" class="btn btn-ghost" style="border: 1px solid #dae5db; color: #6b7a70;" onclick="closeModal('modal-ing')">Cancel</button>
+        <button type="submit" class="btn" style="background: #4a6d55; color: white; padding: 10px 30px;">Save Ingredient</button>
       </div>
     </form>
   </div>
