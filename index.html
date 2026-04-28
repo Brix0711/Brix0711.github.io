@@ -239,6 +239,7 @@
         <div class="form-group"><label class="form-label">PACKAGING</label><input type="number" step="0.01" id="b-packaging" class="form-input" oninput="calculateBatch()" readonly></div>
       </div>
       <div class="form-row"><div class="form-group"><label class="form-label">MARKUP %</label><input type="number" id="b-markup" class="form-input" value="40" oninput="calculateBatch()" readonly></div></div>
+      
       <div class="summary-box">
         <div class="summary-item"><span>Ingredient cost</span><span id="sum-ing">₱0.00</span></div>
         <div class="summary-item"><span>Labor</span><span id="sum-labor">₱0.00</span></div>
@@ -259,7 +260,7 @@ const SUPABASE_URL = 'https://bczzmvhmxrkjvmohqkgx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jR5_T-YuLx1fZ_7x7K6e7w_MXypy-fS';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let ingredients = [], batches = [], activeBatch = null;
+let ingredients = [], batches = [];
 
 async function loadData() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
@@ -272,8 +273,7 @@ async function loadData() {
 function showPage(p) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-  const target = document.getElementById('page-'+p);
-  if (target) target.classList.add('active');
+  document.getElementById('page-'+p).classList.add('active');
   if(event) event.currentTarget.classList.add('active');
 }
 
@@ -302,16 +302,14 @@ function openIngModal(id = null) {
 async function handleSaveIngredient(event) {
   event.preventDefault();
   const id = document.getElementById('ing-id').value;
-  const costBulk = parseFloat(document.getElementById('i-cost-bulk').value) || 0;
-  const qtyBulk = parseFloat(document.getElementById('i-qty-bulk').value) || 1;
-  const calculatedCpu = costBulk / qtyBulk;
+  const cpu = (parseFloat(document.getElementById('i-cost-bulk').value) || 0) / (parseFloat(document.getElementById('i-qty-bulk').value) || 1);
   const data = {
     name: document.getElementById('i-name').value, category: document.getElementById('i-category').value,
-    unit: document.getElementById('i-unit').value, cpu: calculatedCpu, cost_buy: costBulk, qty_buy: qtyBulk,
-    stock: parseFloat(document.getElementById('i-stock').value), low_stock_threshold: parseFloat(document.getElementById('i-alert').value) || 0
+    unit: document.getElementById('i-unit').value, cpu: cpu, stock: parseFloat(document.getElementById('i-stock').value), 
+    low_stock_threshold: parseFloat(document.getElementById('i-alert').value) || 0
   };
   let { error } = id ? await _sb.from('ingredients').update(data).eq('id', id) : await _sb.from('ingredients').insert([data]);
-  if (error) alert("Error: " + error.message); else { closeModal('modal-ing'); loadData(); }
+  if (error) alert(error.message); else { closeModal('modal-ing'); loadData(); }
 }
 
 function toggleIngredients() {
@@ -321,17 +319,12 @@ function toggleIngredients() {
   icon.innerText = content.classList.contains('minimized') ? '▶' : '▼';
 }
 
-function clearFilters() {
-  ['filter-from', 'filter-to', 'filter-name', 'filter-dest'].forEach(id => document.getElementById(id).value = "");
-  renderBatches();
-}
-
 function handleBatchSelect() {
   const name = document.getElementById('b-name').value;
-  const yieldInput = document.getElementById('b-yield'), markupInput = document.getElementById('b-markup');
-  const manualName = document.getElementById('b-name-manual'), manualPctRow = document.getElementById('manual-pct-row');
-  const inputs = ['b-yield', 'b-labor', 'b-overhead', 'b-packaging', 'b-markup'];
   const presets = ["Cookies", "Cookies Premium", "Brownies", "Crinkles"];
+  const manualName = document.getElementById('b-name-manual');
+  const manualPctRow = document.getElementById('manual-pct-row');
+  const inputs = ['b-yield', 'b-labor', 'b-overhead', 'b-packaging', 'b-markup'];
 
   if (name === "Others" || (name !== "" && !presets.includes(name))) {
     manualName.style.display = (name === "Others") ? "block" : "none";
@@ -340,21 +333,20 @@ function handleBatchSelect() {
   } else {
     manualName.style.display = "none"; manualPctRow.style.display = "none";
     inputs.forEach(id => document.getElementById(id).readOnly = true);
-    if (name === "Cookies") { yieldInput.value = 15; markupInput.value = 94; }
-    else if (name === "Cookies Premium") { yieldInput.value = 15; markupInput.value = 87; }
-    else if (name === "Brownies") { yieldInput.value = 12; markupInput.value = 50; }
-    else if (name === "Crinkles") { yieldInput.value = 10; markupInput.value = 53; }
+    if (name === "Cookies") { document.getElementById('b-yield').value = 15; document.getElementById('b-markup').value = 94; }
+    else if (name === "Cookies Premium") { document.getElementById('b-yield').value = 15; document.getElementById('b-markup').value = 87; }
+    else if (name === "Brownies") { document.getElementById('b-yield').value = 12; document.getElementById('b-markup').value = 50; }
+    else if (name === "Crinkles") { document.getElementById('b-yield').value = 10; document.getElementById('b-markup').value = 53; }
   }
   calculateBatch();
 }
 
 function addBatchIngRow(ingId = null, qty = null) {
-  const row = document.createElement('div');
-  row.className = 'form-row ing-usage-row'; row.style.alignItems = 'center'; row.style.gap = '8px';
+  const row = document.createElement('div'); row.className = 'form-row ing-usage-row'; row.style.alignItems = 'center'; row.style.gap = '8px';
   let opts = ingredients.map(i => `<option value="${i.id}" data-cpu="${i.cpu}" ${i.id == ingId ? 'selected' : ''}>${i.name}</option>`).join('');
   row.innerHTML = `<select class="form-input use-sel" style="flex:2; margin-bottom:0;" onchange="calculateBatch()"><option value="">Select</option>${opts}</select>
-    <input type="number" step="any" class="form-input use-qty" style="flex:1; margin-bottom:0;" placeholder="Qty" value="${qty || ''}" oninput="calculateBatch()">
-    <button type="button" style="background:none; border:none; cursor:pointer; font-size:18px; color:#d4856a;" onclick="this.parentElement.remove(); calculateBatch();">×</button>`;
+    <input type="number" step="any" class="form-input use-qty" style="flex:1; margin-bottom:0;" value="${qty || ''}" oninput="calculateBatch()">
+    <button type="button" style="background:none; border:none; cursor:pointer; font-size:18px; color:var(--rose);" onclick="this.parentElement.remove(); calculateBatch();">×</button>`;
   document.getElementById('batch-ing-rows').appendChild(row);
 }
 
@@ -363,14 +355,15 @@ function calculateBatch() {
   let ingTotal = 0;
   document.querySelectorAll('.ing-usage-row').forEach(row => {
     const sel = row.querySelector('.use-sel');
-    const cpu = sel.options[sel.selectedIndex]?.dataset.cpu || 0;
-    ingTotal += cpu * (parseFloat(row.querySelector('.use-qty').value) || 0);
+    ingTotal += (sel.options[sel.selectedIndex]?.dataset.cpu || 0) * (parseFloat(row.querySelector('.use-qty').value) || 0);
   });
+  
   let labor, overhead, packaging;
   if (["Cookies", "Cookies Premium", "Brownies", "Crinkles"].includes(nameSel)) {
     labor = ingTotal * 0.50; overhead = ingTotal * 0.20; packaging = 50;
     document.getElementById('b-labor').value = labor.toFixed(2);
     document.getElementById('b-overhead').value = overhead.toFixed(2);
+    document.getElementById('b-packaging').value = packaging.toFixed(2);
   } else {
     const lPct = parseFloat(document.getElementById('b-labor-pct').value) || 0;
     const oPct = parseFloat(document.getElementById('b-overhead-pct').value) || 0;
@@ -380,12 +373,12 @@ function calculateBatch() {
     document.getElementById('b-labor').value = labor.toFixed(2);
     document.getElementById('b-overhead').value = overhead.toFixed(2);
   }
+
   const sub = ingTotal + labor + overhead + packaging;
   const cafe = sub * 0.10;
   const total = sub + cafe;
-  const yld = parseFloat(document.getElementById('b-yield').value) || 1;
-  const mkpP = parseFloat(document.getElementById('b-markup').value) || 0;
-  const mkpV = total * (mkpP / 100);
+  const mkpV = total * ((parseFloat(document.getElementById('b-markup').value) || 0) / 100);
+
   document.getElementById('sum-ing').innerText = "₱" + ingTotal.toFixed(2);
   document.getElementById('sum-labor').innerText = "₱" + labor.toFixed(2);
   document.getElementById('sum-overhead').innerText = "₱" + overhead.toFixed(2);
@@ -393,7 +386,7 @@ function calculateBatch() {
   document.getElementById('sum-cafe').innerText = "₱" + cafe.toFixed(2);
   document.getElementById('sum-markup-val').innerText = "₱" + mkpV.toFixed(2);
   document.getElementById('sum-total').innerText = "₱" + total.toFixed(2);
-  document.getElementById('sum-suggested').innerText = "₱" + ((total + mkpV) / yld).toFixed(2);
+  document.getElementById('sum-suggested').innerText = "₱" + ((total + mkpV) / (parseFloat(document.getElementById('b-yield').value) || 1)).toFixed(2);
 }
 
 async function handleSaveBatch(event) {
@@ -417,7 +410,7 @@ async function handleSaveBatch(event) {
     ingredients_used: ingredientsUsed
   };
   let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('batches').insert([data]);
-  if (error) alert("Error: " + error.message); else { closeModal('modal-batch'); loadData(); }
+  if (error) alert(error.message); else { closeModal('modal-batch'); loadData(); }
 }
 
 function openBatchModal(id = null, duplicate = false) {
@@ -425,7 +418,6 @@ function openBatchModal(id = null, duplicate = false) {
   if (id) {
     const b = batches.find(x => x.id == id);
     document.getElementById('batch-id').value = duplicate ? "" : b.id;
-    document.getElementById('modal-batch-title').innerText = duplicate ? "Duplicate Batch" : "Edit Batch";
     const nameDropdown = document.getElementById('b-name');
     if (Array.from(nameDropdown.options).some(opt => opt.value === b.name)) nameDropdown.value = b.name;
     else { nameDropdown.value = "Others"; document.getElementById('b-name-manual').style.display = "block"; document.getElementById('b-name-manual').value = b.name; }
@@ -447,7 +439,7 @@ async function openSalesModal(batchId) {
   const qty = prompt(`Pieces sold for ${b.name}?`, b.yield_pcs); if (!qty) return;
   const prc = prompt(`Price per unit?`, b.suggested_price); if (!prc) return;
   const { error } = await _sb.from('sales').insert([{ batch_id: batchId, item_name: b.name, qty_sold: parseFloat(qty), unit_price: parseFloat(prc), total_revenue: parseFloat(qty) * parseFloat(prc) }]);
-  if (error) alert("Error: " + error.message); else loadData();
+  if (error) alert(error.message); else loadData();
 }
 
 function renderBatches() {
@@ -500,6 +492,12 @@ function renderSales(sData) {
   const body = document.getElementById('sales-table-body');
   if (body) body.innerHTML = sData.map(s => `<tr><td>${s.item_name}</td><td>${s.batches?.name || ''}</td><td>${s.qty_sold}</td><td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td><td><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
 }
+
+function clearFilters() {
+  ['filter-from', 'filter-to', 'filter-name', 'filter-dest'].forEach(id => document.getElementById(id).value = "");
+  renderBatches();
+}
+
 loadData();
 </script>
 </body>
