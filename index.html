@@ -466,16 +466,32 @@ async function loadData() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
   const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
   const { data: s } = await _sb.from('sales').select('*, batches(name, date, destination, yield_pcs, total_cost, labor_cost, overhead_cost, packaging_cost, cafe_percentage_cost)');
-  ingredients = i || []; batches = b || []; allSalesData = s || [];
-  refreshDashboard(); renderInventory(); renderBatches(); renderSales(allSalesData);
-  updateSalesItemDropdown(); updateDashboardFilterDropdown();
+  
+  ingredients = i || []; 
+  batches = b || []; 
+  allSalesData = s || [];
+
+  // These three lines ensure the UI updates with the database data
+  updateDashboardFilterDropdown(); 
+  updateSalesItemDropdown(); 
+  refreshDashboard(); 
+
+  renderInventory(); 
+  renderBatches(); 
+  renderSales(allSalesData);
 }
 
 function updateDashboardFilterDropdown() {
     const dashDropdown = document.getElementById('dash-filter-item');
     if (!dashDropdown) return;
+
+    // Pull unique names from the batches array which is synced with Supabase
     const uniqueItems = [...new Set(batches.map(b => b.name))].sort();
-    let optionsHtml = `<option value="">All Items</option>` + uniqueItems.map(name => `<option value="${name}">${name}</option>`).join('');
+    
+    // Clear and rebuild the dropdown options
+    let optionsHtml = `<option value="">All Items</option>`;
+    optionsHtml += uniqueItems.map(name => `<option value="${name}">${name}</option>`).join('');
+    
     dashDropdown.innerHTML = optionsHtml;
 }
 
