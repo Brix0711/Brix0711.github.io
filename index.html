@@ -326,8 +326,12 @@ function handleBatchSelect() {
   const manualPctRow = document.getElementById('manual-pct-row');
   const inputs = ['b-yield', 'b-labor', 'b-overhead', 'b-packaging', 'b-markup'];
 
-  if (name === "Others" || (name !== "" && !presets.includes(name))) {
-    manualName.style.display = (name === "Others") ? "block" : "none";
+  if (name === "Others") {
+    manualName.style.display = "block";
+    manualPctRow.style.display = "flex";
+    inputs.forEach(id => document.getElementById(id).readOnly = false);
+  } else if (name !== "" && !presets.includes(name)) {
+    manualName.style.display = "none";
     manualPctRow.style.display = "flex";
     inputs.forEach(id => document.getElementById(id).readOnly = false);
   } else {
@@ -336,7 +340,7 @@ function handleBatchSelect() {
     if (name === "Cookies") { document.getElementById('b-yield').value = 15; document.getElementById('b-markup').value = 94; }
     else if (name === "Cookies Premium") { document.getElementById('b-yield').value = 15; document.getElementById('b-markup').value = 87; }
     else if (name === "Brownies") { document.getElementById('b-yield').value = 12; document.getElementById('b-markup').value = 50; }
-    else if (name === "Crinkles") { document.getElementById('b-yield').value = 50; document.getElementById('b-markup').value = 53; }
+    else if (name === "Crinkles") { document.getElementById('b-yield').value = 10; document.getElementById('b-markup').value = 53; }
   }
   calculateBatch();
 }
@@ -414,16 +418,34 @@ async function handleSaveBatch(event) {
 }
 
 function openBatchModal(id = null, duplicate = false) {
-  document.querySelector('#modal-batch form').reset(); document.getElementById('batch-ing-rows').innerHTML = "";
+  const form = document.querySelector('#modal-batch form');
+  form.reset();
+  document.getElementById('batch-ing-rows').innerHTML = "";
+  
+  const nameDropdown = document.getElementById('b-name');
+  const presets = ["Cookies", "Cookies Premium", "Brownies", "Crinkles", "Others", ""];
+  const customNames = [...new Set(batches.map(b => b.name))].filter(n => !presets.includes(n));
+  
+  nameDropdown.innerHTML = `
+    <option value="">Select Item</option>
+    <option value="Cookies">Cookies</option>
+    <option value="Cookies Premium">Cookies Premium</option>
+    <option value="Brownies">Brownies</option>
+    <option value="Crinkles">Crinkles</option>
+    ${customNames.map(n => `<option value="${n}">${n}</option>`).join('')}
+    <option value="Others">Others (Manual Input)</option>
+  `;
+
   if (id) {
     const b = batches.find(x => x.id == id);
     document.getElementById('batch-id').value = duplicate ? "" : b.id;
-    const nameDropdown = document.getElementById('b-name');
-    if (Array.from(nameDropdown.options).some(opt => opt.value === b.name)) nameDropdown.value = b.name;
-    else { nameDropdown.value = "Others"; document.getElementById('b-name-manual').style.display = "block"; document.getElementById('b-name-manual').value = b.name; }
-    document.getElementById('b-destination').value = b.destination; document.getElementById('b-date').value = b.date;
-    document.getElementById('b-yield').value = b.yield_pcs; document.getElementById('b-labor').value = b.labor_cost;
-    document.getElementById('b-overhead').value = b.overhead_cost; document.getElementById('b-packaging').value = b.packaging_cost;
+    nameDropdown.value = b.name;
+    document.getElementById('b-destination').value = b.destination; 
+    document.getElementById('b-date').value = b.date;
+    document.getElementById('b-yield').value = b.yield_pcs; 
+    document.getElementById('b-labor').value = b.labor_cost;
+    document.getElementById('b-overhead').value = b.overhead_cost; 
+    document.getElementById('b-packaging').value = b.packaging_cost;
     document.getElementById('b-markup').value = b.markup_percent;
     if (b.ingredients_used) b.ingredients_used.forEach(ing => addBatchIngRow(ing.id, ing.qty));
     handleBatchSelect();
