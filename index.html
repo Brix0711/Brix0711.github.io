@@ -60,9 +60,11 @@
   .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
   .card h3 { font-family: 'Playfair Display', serif; margin-bottom: 5px; font-size: 18px; }
   
+  /* CHART STABILITY FIX */
+  .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
+
   .filter-bar { background: var(--warm-white); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; }
   
-  /* TABLE STYLES */
   .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
   table { width: 100%; border-collapse: collapse; min-width: 700px; }
   th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #fafcfa; }
@@ -74,7 +76,6 @@
   .pill-best { background: var(--sage-bg); color: var(--sage); }
   .pill-least { background: var(--rose-bg); color: var(--rose); }
 
-  /* MODALS */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); padding: 15px; }
   .modal-bg.open { display: flex; }
   .modal { background: var(--warm-white); border-radius: var(--radius); padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
@@ -109,6 +110,7 @@
     .page-header { flex-direction: column; align-items: flex-start !important; gap: 15px; }
     .page-header div { width: 100%; flex-direction: column; }
     .page-header select, .page-header button { width: 100% !important; }
+    .chart-container { height: 220px; } /* Slightly smaller chart on phones */
   }
 </style>
 </head>
@@ -183,7 +185,9 @@
                     <option value="year">This Year</option>
                 </select>
               </div>
-              <canvas id="salesChart" height="120"></canvas>
+              <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+              </div>
           </div>
           <div class="card">
               <h3>Marketing Insights</h3>
@@ -399,7 +403,6 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let ingredients = [], batches = [], allSalesData = [], salesChart = null;
 
-// --- AUTHENTICATION LOGIC ---
 async function checkUser() {
   const { data: { user } } = await _sb.auth.getUser();
   if (user) {
@@ -419,7 +422,6 @@ async function handleLogin(e) {
 async function handleLogout() { await _sb.auth.signOut(); location.reload(); }
 checkUser();
 
-// --- DATA LOGIC ---
 async function loadData() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
   const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
@@ -473,7 +475,8 @@ function renderInsights(sData) {
 }
 
 function renderSalesChart(sData) {
-    const ctx = document.getElementById('salesChart').getContext('2d');
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
     if (salesChart) salesChart.destroy();
     const dataMap = {};
     sData.forEach(s => {
@@ -483,7 +486,12 @@ function renderSalesChart(sData) {
     salesChart = new Chart(ctx, {
         type: 'line',
         data: { labels: Object.keys(dataMap), datasets: [{ data: Object.values(dataMap), borderColor: '#4a6d55', fill: true, tension: 0.4 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, // ALLOWS FILLING CONTAINER
+            plugins: { legend: { display: false } }, 
+            scales: { y: { beginAtZero: true } } 
+        }
     });
 }
 
@@ -616,7 +624,7 @@ async function handleSaveBatch(event) {
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value), markup_value: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')), ingredients_used: ingredientsUsed
   };
-  let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('batches').insert([data]);
+  let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('ingredients').insert([data]);
   if (error) alert(error.message); else { closeModal('modal-batch'); loadData(); }
 }
 
