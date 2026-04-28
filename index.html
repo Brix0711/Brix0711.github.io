@@ -472,10 +472,18 @@ function renderDashboardLists(bData) {
         </div>`).join('') || '<p style="color:var(--sage);">Stock levels healthy!</p>';
 }
 
-function updateDashboardFilterDropdown() {
-    const dropdown = document.getElementById('dash-filter-item');
-    const uniqueItems = [...new Set(batches.map(b => b.name))];
-    dropdown.innerHTML = `<option value="">All Items</option>` + uniqueItems.map(n => `<option value="${n}">${n}</option>`).join('');
+function updateFilterDropdowns() {
+    const dashDropdown = document.getElementById('dash-filter-item');
+    const batchDropdown = document.getElementById('filter-name');
+    
+    // Get unique names from current batch database
+    const uniqueItems = [...new Set(batches.map(b => b.name))].sort();
+    
+    const optionsHtml = `<option value="">All Items</option>` + 
+        uniqueItems.map(name => `<option value="${name}">${name}</option>`).join('');
+        
+    dashDropdown.innerHTML = optionsHtml;
+    batchDropdown.innerHTML = optionsHtml;
 }
 
 // SHARED LOGIC (Unchanged from previous versions but kept for completeness)
