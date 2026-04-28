@@ -48,9 +48,8 @@
   .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
   .stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--brown-dark); }
   
-  /* DATA VISUALIZATION CONTAINER */
-  .chart-container { position: relative; width: 100%; height: 320px; }
-  .dash-main-split { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .chart-container { position: relative; width: 100%; height: 350px; }
+  .dash-main-split { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; margin-bottom: 20px; }
   .dash-bottom-split { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
 
   .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
@@ -59,14 +58,14 @@
   /* FILTERS & TABLES */
   .filter-bar { background: var(--warm-white); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; }
   .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  table { width: 100%; border-collapse: collapse; min-width: 800px; }
   th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #fafcfa; }
   td { padding: 14px 12px; border-bottom: 1px solid #f0f0f0; }
 
   /* MODALS */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); padding: 15px; }
   .modal-bg.open { display: flex; }
-  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 650px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal { background: var(--warm-white); border-radius: var(--radius); padding: 32px; width: 680px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
 
   /* BUTTONS & FORMS */
   .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
@@ -77,8 +76,9 @@
   .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; margin-bottom: 15px; }
   .form-row { display: flex; gap: 15px; flex-wrap: wrap; }
   .form-group { flex: 1; min-width: 140px; }
+  .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 5px; }
 
-  /* BATCH RECORD ELEMENTS (REVERTED) */
+  /* BATCH RECORD ELEMENTS (ORIGINAL) */
   .batch-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
   .summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
   .summary-box { background: #f9fbf9; border-radius: 10px; padding: 20px; border: 1px solid #edf2ed; margin-top: 15px; }
@@ -102,7 +102,7 @@
     .nav-tabs { width: 100%; overflow-x: auto; padding-bottom: 8px; justify-content: flex-start; }
     .nav-tab { font-size: 13px; padding: 6px 12px; }
     .grid-4 { grid-template-columns: 1fr; }
-    .chart-container { height: 240px; } 
+    .chart-container { height: 260px; } 
     .dashboard-header { flex-direction: column; align-items: flex-start !important; gap: 15px; }
     .dashboard-header div { width: 100%; flex-direction: column; }
     .dashboard-header .form-input, .dashboard-header .btn { width: 100% !important; }
@@ -124,10 +124,12 @@
       <h2 style="font-family:'Playfair Display'; margin-bottom:10px;">Admin Login</h2>
       <p style="color:var(--text-muted); font-size:12px; margin-bottom:25px;">Enter credentials to access the system.</p>
       <form id="login-form" onsubmit="handleLogin(event)">
-          <label class="form-label" style="text-align:left;">Email Address</label>
-          <input type="email" id="login-email" class="form-input" placeholder="admin@sweetted.com" required>
-          <label class="form-label" style="text-align:left;">Password</label>
-          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+          <div style="text-align:left;">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="login-email" class="form-input" placeholder="admin@sweetted.com" required>
+            <label class="form-label">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+          </div>
         <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;">Sign In</button>
       </form>
       <p id="auth-error" style="color:var(--rose); font-size:12px; margin-top:15px; display:none;"></p>
@@ -138,7 +140,7 @@
     <div class="topbar">
       <div class="brand-block">
           <img src="https://lh3.googleusercontent.com/a-/ALV-UjUeccNPa_aqmec1NMIUVJMeteDoopgCvhS7ZnnmDET9Mu_HlBE=s400-p" alt="Logo" class="logo-img">
-          <div class="brand-text"><h1>SweetTed</h1><p>Cost & Pricing System</p></div>
+          <div class="brand-text"><h1>Sweet Ted</h1><p>Cost & Pricing System</p></div>
       </div>
       <div class="nav-tabs">
           <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
@@ -234,9 +236,10 @@
                     <option value="">All Destinations</option>
                     <option value="Online Orders">Online Orders</option>
                     <option value="Bevi & Go">Bevi & Go</option>
+                    <option value="Personal Consumption">Personal Consumption</option>
                 </select>
             </div>
-            <button class="btn btn-ghost" onclick="clearFilters()" style="height:38px;">Clear</button>
+            <button class="btn btn-ghost" onclick="clearFilters()" style="height:38px;">Clear Filters</button>
         </div>
         <div id="batch-list-container"></div>
     </div>
@@ -254,7 +257,7 @@
     </div>
     </div>
 
-    <footer>© 2026 Sweet Ted Cafe | 🐻 Adaptive Analytics System</footer>
+    <footer>© 2026 Sweet Ted. All rights reserved 🐻 </footer>
 </div>
 
 <div id="modal-ing" class="modal-bg">
@@ -269,7 +272,7 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">PURCHASE COST</label><input type="number" step="any" id="i-cost-bulk" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">PURCHASE COST (₱)</label><input type="number" step="any" id="i-cost-bulk" class="form-input" required></div>
           <div class="form-group"><label class="form-label">PURCHASE QTY</label><input type="number" step="any" id="i-qty-bulk" class="form-input" required></div>
         </div>
         <div class="form-row">
@@ -286,7 +289,7 @@
 
 <div id="modal-batch" class="modal-bg">
     <div class="modal">
-      <h2 id="modal-batch-title" style="font-family:'Playfair Display'; margin-bottom:20px;">New Batch</h2>
+      <h2 id="modal-batch-title" style="font-family:'Playfair Display'; margin-bottom:20px;">New Batch Record</h2>
       <form onsubmit="handleSaveBatch(event)">
         <input type="hidden" id="batch-id">
         <div class="form-row">
@@ -300,7 +303,7 @@
               <option value="Crinkles">Crinkles</option>
               <option value="Others">Others (Manual)</option>
             </select>
-            <input type="text" id="b-name-manual" class="form-input" placeholder="Enter name" style="display:none; margin-top:-10px;">
+            <input type="text" id="b-name-manual" class="form-input" placeholder="Enter custom name" style="display:none; margin-top:-10px;">
           </div>
           <div class="form-group"><label class="form-label">DESTINATION</label>
             <select id="b-destination" class="form-input"><option value="Online Orders">Online Orders</option><option value="Bevi & Go">Bevi & Go</option><option value="Personal Consumption">Personal Consumption</option></select>
@@ -322,7 +325,7 @@
         <div class="form-row" style="margin-top:5px;">
           <div class="form-group"><label class="form-label">LABOR (₱)</label><input type="number" step="0.01" id="b-labor" class="form-input" oninput="calculateBatch()" readonly></div>
           <div class="form-group"><label class="form-label">OVERHEAD (₱)</label><input type="number" step="0.01" id="b-overhead" class="form-input" oninput="calculateBatch()" readonly></div>
-          <div class="form-group"><label class="form-label">PACKAGING</label><input type="number" step="0.01" id="b-packaging" class="form-input" oninput="calculateBatch()" readonly></div>
+          <div class="form-group"><label class="form-label">PACKAGING (₱)</label><input type="number" step="0.01" id="b-packaging" class="form-input" oninput="calculateBatch()" readonly></div>
         </div>
         <div class="form-row"><div class="form-group"><label class="form-label">MARKUP %</label><input type="number" id="b-markup" class="form-input" value="40" oninput="calculateBatch()" readonly></div></div>
         
@@ -331,12 +334,12 @@
           <div class="summary-item"><span>Labor & Overhead</span><span id="sum-lab-over">₱0.00</span></div>
           <div class="summary-item"><span>Cafe (10%)</span><span id="sum-cafe">₱0.00</span></div>
           <div class="summary-item" style="color: var(--rose); font-weight: 600;"><span>Markup Value</span><span id="sum-markup-val">₱0.00</span></div>
-          <div class="summary-total"><span>Total Cost</span><span id="sum-total">₱0.00</span></div>
+          <div class="summary-total"><span>Total Batch Cost</span><span id="sum-total">₱0.00</span></div>
           <div class="summary-item" style="color:var(--sage); font-weight:700; font-size:16px; margin-top:5px;"><span>Suggested Price / Pc</span><span id="sum-suggested">₱0.00</span></div>
         </div>
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button type="button" class="btn btn-ghost" onclick="closeModal('modal-batch')">Cancel</button>
-            <button type="submit" class="btn btn-save">Save Batch Record</button>
+            <button type="submit" class="btn btn-save">Save Record</button>
         </div>
       </form>
     </div>
@@ -349,7 +352,7 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let ingredients = [], batches = [], allSalesData = [], salesChart = null;
 
-// --- AUTH ---
+// --- AUTH LOGIC ---
 async function checkUser() {
   const { data: { user } } = await _sb.auth.getUser();
   if (user) {
@@ -363,13 +366,15 @@ async function handleLogin(e) {
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
   const { error } = await _sb.auth.signInWithPassword({ email, password });
-  if (error) { document.getElementById('auth-error').innerText = error.message; document.getElementById('auth-error').style.display = 'block'; } 
-  else { location.reload(); }
+  if (error) { 
+      document.getElementById('auth-error').innerText = error.message; 
+      document.getElementById('auth-error').style.display = 'block'; 
+  } else { location.reload(); }
 }
 async function handleLogout() { await _sb.auth.signOut(); location.reload(); }
 checkUser();
 
-// --- DATA ---
+// --- DATA LOADING ---
 async function loadData() {
   const { data: i } = await _sb.from('ingredients').select('*').order('name');
   const { data: b } = await _sb.from('batches').select('*').order('created_at', {ascending: false});
@@ -456,7 +461,14 @@ function showPage(p) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// --- INGREDIENT ACTIONS ---
+// --- INVENTORY ACTIONS ---
+function renderInventory() {
+  document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `<tr>
+    <td>${i.name}</td><td>${i.category || 'General'}</td><td>${i.unit}</td>
+    <td>₱${i.cpu.toFixed(2)}</td><td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td>
+    <td><button class="action-btn" onclick="openIngModal(${i.id})">Edit</button><button class="action-btn btn-del" onclick="deleteItem('ingredients', ${i.id})">Del</button></td></tr>`).join('');
+}
+
 function openIngModal(id = null) {
   const form = document.querySelector('#modal-ing form'); form.reset();
   document.getElementById('ing-id').value = id || "";
@@ -601,14 +613,6 @@ function openBatchModal(id = null) {
     addBatchIngRow(); 
   }
   openModal('modal-batch');
-}
-
-// --- RENDER FUNCTIONS ---
-function renderInventory() {
-  document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `<tr>
-    <td>${i.name}</td><td>${i.category || 'General'}</td><td>${i.unit}</td>
-    <td>₱${i.cpu.toFixed(2)}</td><td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td>
-    <td><button class="action-btn" onclick="openIngModal(${i.id})">Edit</button></td></tr>`).join('');
 }
 
 function renderBatches() {
