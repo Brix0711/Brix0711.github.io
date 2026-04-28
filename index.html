@@ -97,7 +97,15 @@
   .batch-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
   .summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
 
-  /* PRINT STYLES */
+  /* CUSTOM MULTI-SELECT STYLES */
+  .multi-select-container { position: relative; width: 160px; }
+  .multi-select-display { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .multi-select-options { display: none; position: absolute; top: 100%; left: 0; width: 220px; max-height: 250px; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 500; box-shadow: var(--shadow); padding: 10px; }
+  .multi-select-options.show { display: block; }
+  .multi-select-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f9f9f9; cursor: pointer; }
+  .multi-select-item:last-child { border-bottom: none; }
+  .multi-select-item input { width: 16px; height: 16px; cursor: pointer; }
+
   @media print {
     body { background: white; padding: 0; }
     .topbar, .nav-tabs, .filter-bar, .btn, .action-btn, footer, #chart-period, .dashboard-sub-grid { display: none !important; }
@@ -121,6 +129,7 @@
     .nav-tabs { width: 100%; }
     .page-header { flex-direction: column; align-items: flex-start !important; gap: 15px; }
     .page-header select, .page-header button { width: 100% !important; }
+    .multi-select-container { width: 100% !important; }
   }
 </style>
 </head>
@@ -164,16 +173,19 @@
         <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
           <h1 style="font-family:'Playfair Display'; font-size:28px;">Good morning! 🐻</h1>
           <div style="display:flex; gap:10px; flex-wrap: wrap;">
-              <select id="dash-filter-item" class="form-input" style="margin-bottom:0; width:150px;" onchange="refreshDashboard()">
-                <option value=""></option>
-              </select>
-              <select id="dash-filter-dest" class="form-input" style="margin-bottom:0; width:150px;" onchange="refreshDashboard()">
+              <div class="multi-select-container">
+                <label class="form-label">Items</label>
+                <div class="multi-select-display" onclick="toggleMultiSelect('dash-items-options')">All Items</div>
+                <div id="dash-items-options" class="multi-select-options"></div>
+              </div>
+
+              <select id="dash-filter-dest" class="form-input" style="margin-bottom:0; width:150px; margin-top:16px;" onchange="refreshDashboard()">
                 <option value="">All Destinations</option>
                 <option value="Online Orders">Online Orders</option>
                 <option value="Bevi & Go">Bevi & Go</option>
                 <option value="Personal Consumption">Personal Consumption</option>
               </select>
-              <button class="btn btn-primary" onclick="openBatchModal()">+ New Batch</button>
+              <button class="btn btn-primary" style="margin-top:16px;" onclick="openBatchModal()">+ New Batch</button>
           </div>
         </div>
 
@@ -242,10 +254,11 @@
         </div>
         <div class="filter-bar">
           <div class="filter-group">
-              <label class="form-label">Batch Name</label>
-              <select id="filter-name" class="form-input" style="margin-bottom:0; width:160px;" onchange="renderBatches()">
-                <option value="">All Items</option>
-              </select>
+              <label class="form-label">Batch Names</label>
+              <div class="multi-select-container">
+                <div class="multi-select-display" onclick="toggleMultiSelect('batch-items-options')">All Items</div>
+                <div id="batch-items-options" class="multi-select-options"></div>
+              </div>
           </div>
           <div class="filter-group">
               <label class="form-label">Destination</label>
@@ -297,10 +310,11 @@
 
         <div class="filter-bar">
           <div class="filter-group">
-              <label class="form-label">Item</label>
-              <select id="sales-filter-item" class="form-input" style="margin-bottom:0; width:160px;" onchange="applySalesFilters()">
-                <option value="">All Items</option>
-              </select>
+              <label class="form-label">Items</label>
+              <div class="multi-select-container">
+                <div class="multi-select-display" onclick="toggleMultiSelect('sales-items-options')">All Items</div>
+                <div id="sales-items-options" class="multi-select-options"></div>
+              </div>
           </div>
           <div class="filter-group">
               <label class="form-label">Destination</label>
@@ -443,6 +457,11 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let ingredients = [], batches = [], allSalesData = [], salesChart = null;
 
+// Multi-select state
+let selectedDashboardItems = [];
+let selectedBatchItems = [];
+let selectedSalesItems = [];
+
 async function checkUser() {
   const { data: { user } } = await _sb.auth.getUser();
   if (user) {
@@ -471,9 +490,7 @@ async function loadData() {
   batches = b || []; 
   allSalesData = s || [];
 
-  // These three lines ensure the UI updates with the database data
-  updateDashboardFilterDropdown(); 
-  updateSalesItemDropdown(); 
+  updateAllMultiSelects(); 
   refreshDashboard(); 
 
   renderInventory(); 
@@ -481,25 +498,91 @@ async function loadData() {
   renderSales(allSalesData);
 }
 
-function updateDashboardFilterDropdown() {
-    const dashDropdown = document.getElementById('dash-filter-item');
-    if (!dashDropdown) return;
+// MULTI-SELECT UTILS
+function toggleMultiSelect(id) {
+    document.querySelectorAll('.multi-select-options').forEach(opt => {
+        if(opt.id !== id) opt.classList.remove('show');
+    });
+    document.getElementById(id).classList.toggle('show');
+}
 
-    // Pull unique names from the batches array which is synced with Supabase
-    const uniqueItems = [...new Set(batches.map(b => b.name))].sort();
+// Close dropdowns if clicking outside
+window.onclick = function(event) {
+    if (!event.target.matches('.multi-select-display') && !event.target.closest('.multi-select-options')) {
+        document.querySelectorAll('.multi-select-options').forEach(opt => opt.classList.remove('show'));
+    }
+}
+
+function updateAllMultiSelects() {
+    // Unique item names from Batches for Filter usage
+    const uniqueBatchNames = [...new Set(batches.map(b => b.name))].sort();
+    const uniqueSalesNames = [...new Set(allSalesData.map(s => s.item_name))].sort();
+
+    buildOptions('dash-items-options', uniqueBatchNames, selectedDashboardItems, refreshDashboard);
+    buildOptions('batch-items-options', uniqueBatchNames, selectedBatchItems, renderBatches);
+    buildOptions('sales-items-options', uniqueSalesNames, selectedSalesItems, applySalesFilters);
+}
+
+function buildOptions(containerId, names, selectedArray, callback) {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+
+    container.innerHTML = names.map(name => `
+        <div class="multi-select-item" onclick="handleCheck(event, '${containerId}')">
+            <input type="checkbox" value="${name}" ${selectedArray.includes(name) ? 'checked' : ''}>
+            <span>${name}</span>
+        </div>
+    `).join('');
+
+    updateDisplay(containerId, selectedArray);
+}
+
+function handleCheck(e, containerId) {
+    const checkbox = e.currentTarget.querySelector('input');
+    // Prevent double fire if the checkbox itself was clicked
+    if(e.target !== checkbox) checkbox.checked = !checkbox.checked;
     
-    // Clear and rebuild the dropdown options
-    let optionsHtml = `<option value="">All Items</option>`;
-    optionsHtml += uniqueItems.map(name => `<option value="${name}">${name}</option>`).join('');
+    const val = checkbox.value;
+    let targetArray;
+    if(containerId.includes('dash')) targetArray = selectedDashboardItems;
+    else if(containerId.includes('batch')) targetArray = selectedBatchItems;
+    else targetArray = selectedSalesItems;
+
+    if(checkbox.checked) {
+        if(!targetArray.includes(val)) targetArray.push(val);
+    } else {
+        const index = targetArray.indexOf(val);
+        if(index > -1) targetArray.splice(index, 1);
+    }
+
+    updateDisplay(containerId, targetArray);
     
-    dashDropdown.innerHTML = optionsHtml;
+    // Trigger the specific refresh logic
+    if(containerId.includes('dash')) refreshDashboard();
+    else if(containerId.includes('batch')) renderBatches();
+    else applySalesFilters();
+}
+
+function updateDisplay(containerId, selectedArray) {
+    const display = document.getElementById(containerId).previousElementSibling;
+    if(selectedArray.length === 0) display.innerText = "All Items";
+    else if(selectedArray.length === 1) display.innerText = selectedArray[0];
+    else display.innerText = `${selectedArray.length} items selected`;
 }
 
 function refreshDashboard() {
-  const itemF = document.getElementById('dash-filter-item').value;
   const destF = document.getElementById('dash-filter-dest').value;
-  const filteredSales = allSalesData.filter(s => (!itemF || s.item_name === itemF) && (!destF || (s.batches?.destination === destF)));
-  const filteredBatches = batches.filter(b => (!itemF || b.name === itemF) && (!destF || b.destination === destF));
+  
+  const filteredSales = allSalesData.filter(s => 
+    (selectedDashboardItems.length === 0 || selectedDashboardItems.includes(s.item_name)) && 
+    (!destF || (s.batches?.destination === destF))
+  );
+  
+  const filteredBatches = batches.filter(b => 
+    (selectedDashboardItems.length === 0 || selectedDashboardItems.includes(b.name)) && 
+    (!destF || b.destination === destF)
+  );
+
   renderStats(filteredSales, filteredBatches);
   renderSalesChart(filteredSales);
   renderInsights(filteredSales);
@@ -525,7 +608,12 @@ function renderStats(sData, bData) {
 }
 
 function renderInsights(sData) {
-    if (sData.length === 0) return;
+    if (sData.length === 0) {
+        document.getElementById('best-seller').innerText = "N/A";
+        document.getElementById('least-seller').innerText = "N/A";
+        document.getElementById('dest-split').innerHTML = "";
+        return;
+    }
     const counts = {}, dests = {};
     sData.forEach(s => {
         counts[s.item_name] = (counts[s.item_name] || 0) + s.qty_sold;
@@ -684,6 +772,7 @@ async function handleSaveBatch(event) {
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value), markup_value: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')), ingredients_used: ingredientsUsed
   };
+
   let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('batches').insert([data]);
   if (error) alert(error.message); else { closeModal('modal-batch'); loadData(); }
 }
@@ -713,8 +802,17 @@ async function openSalesModal(batchId) {
 }
 
 function renderBatches() {
-  const nf = document.getElementById('filter-name').value, df = document.getElementById('filter-dest').value;
-  const filtered = batches.filter(b => (!nf || b.name === nf) && (!df || b.destination === df));
+  const df = document.getElementById('filter-dest').value;
+  const from = document.getElementById('filter-from').value;
+  const to = document.getElementById('filter-to').value;
+
+  const filtered = batches.filter(b => {
+    const matchName = selectedBatchItems.length === 0 || selectedBatchItems.includes(b.name);
+    const matchDest = !df || b.destination === df;
+    const matchDate = (!from || b.date >= from) && (!to || b.date <= to);
+    return matchName && matchDest && matchDate;
+  });
+
   document.getElementById('batch-list-container').innerHTML = filtered.map(b => `<div class="card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap: wrap; gap: 10px;">
         <div><h3>${b.name}</h3><div><span style="font-size:11px; background:var(--sage-bg); padding:2px 6px; border-radius:4px; color:var(--sage); font-weight:700; margin-right:5px;">${b.destination || 'Online'}</span><span style="font-size:11px; color:var(--text-muted); font-weight:600;">📅 ${b.date}</span></div></div>
@@ -742,11 +840,20 @@ function renderInventory() {
   document.getElementById('ing-table-body').innerHTML = ingredients.map(i => `<tr><td>${i.name}</td><td>${i.category}</td><td>${i.unit}</td><td>₱${i.cpu.toFixed(2)}</td><td>${i.stock}</td><td>₱${(i.cpu*i.stock).toFixed(2)}</td><td><button class="action-btn" onclick="openIngModal(${i.id})">Edit</button> <button class="action-btn btn-del" onclick="deleteItem('ingredients',${i.id})">Del</button></td></tr>`).join('');
 }
 
-function updateSalesItemDropdown() {
-  const dropdown = document.getElementById('sales-filter-item');
-  if (!dropdown) return;
-  const uniqueItems = [...new Set(allSalesData.map(s => s.item_name))].sort();
-  dropdown.innerHTML = `<option value="">All Items</option>` + uniqueItems.map(n => `<option value="${n}">${n}</option>`).join('');
+function applySalesFilters() {
+  const df = document.getElementById('sales-filter-dest').value;
+  const from = document.getElementById('sales-filter-from').value;
+  const to = document.getElementById('sales-filter-to').value;
+
+  const filtered = allSalesData.filter(s => {
+    const matchName = selectedSalesItems.length === 0 || selectedSalesItems.includes(s.item_name);
+    const matchDest = !df || (s.batches?.destination === df);
+    const sDate = s.batches?.date || s.created_at.split('T')[0];
+    const matchDate = (!from || sDate >= from) && (!to || sDate <= to);
+    return matchName && matchDest && matchDate;
+  });
+
+  renderSales(filtered);
 }
 
 function renderSales(sData) {
@@ -774,13 +881,11 @@ function renderSales(sData) {
     const best = sorted.length ? sorted[0] : ["None", 0];
     const least = sorted.length ? sorted[sorted.length-1] : ["None", 0];
 
-    // Update Print Insights Content
     document.getElementById('print-insights-content').innerHTML = `
       <div class="print-stat"><b>Top Selling Item:</b> ${best[0]} (${best[1]} pcs)</div>
       <div class="print-stat" style="margin-top:10px;"><b>Least Selling Item:</b> ${least[0]} (${least[1]} pcs)</div>
     `;
 
-    // Update Print Financial Content
     document.getElementById('print-financial-content').innerHTML = `
       <div style="font-size:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Labor:</span><span>₱${tLabor.toFixed(2)}</span></div>
@@ -797,9 +902,24 @@ function renderSales(sData) {
 }
 
 async function deleteItem(tbl, id) { if(confirm("Delete?")) { await _sb.from(tbl).delete().eq('id', id); loadData(); } }
-function clearFilters() { renderBatches(); }
-function applySalesFilters() { renderSales(allSalesData); }
-function clearSalesFilters() { renderSales(allSalesData); }
+
+function clearFilters() { 
+    selectedBatchItems = []; 
+    document.getElementById('filter-dest').value = "";
+    document.getElementById('filter-from').value = "";
+    document.getElementById('filter-to').value = "";
+    updateAllMultiSelects();
+    renderBatches(); 
+}
+
+function clearSalesFilters() { 
+    selectedSalesItems = [];
+    document.getElementById('sales-filter-dest').value = "";
+    document.getElementById('sales-filter-from').value = "";
+    document.getElementById('sales-filter-to').value = "";
+    updateAllMultiSelects();
+    renderSales(allSalesData); 
+}
 </script>
 </body>
 </html>
