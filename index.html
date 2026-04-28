@@ -17,6 +17,7 @@
     --gold: #b59431; --gold-bg: #fcf9ee; --border: #dae5db;
     --text-main: #233229; --text-muted: #6b7a70; --shadow: 0 2px 12px rgba(46,68,54,0.08);
     --radius: 12px;
+    --pos: #2e7d32; --neg: #d32f2f;
   }
 
   body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-main); font-size: 14px; display: flex; flex-direction: column; min-height: 100vh; }
@@ -57,10 +58,13 @@
   .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
   .stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--brown-dark); }
   
+  /* CONDITIONAL COLORS */
+  .val-pos { color: var(--pos) !important; }
+  .val-neg { color: var(--neg) !important; }
+
   .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
   .card h3 { font-family: 'Playfair Display', serif; margin-bottom: 5px; font-size: 18px; }
   
-  /* CHART STABILITY FIX */
   .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
 
   .filter-bar { background: var(--warm-white); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; }
@@ -103,6 +107,21 @@
   .batch-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
   .summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
 
+  /* PRINT STYLES */
+  @media print {
+    body { background: white; padding: 0; }
+    .topbar, .nav-tabs, .filter-bar, .btn, .action-btn, footer, #chart-period, .dashboard-sub-grid { display: none !important; }
+    .main { padding: 0; max-width: 100%; margin: 0; }
+    .card { box-shadow: none; border: 1px solid #eee; break-inside: avoid; }
+    .table-container { overflow: visible; }
+    table { min-width: 100%; }
+    th { background: #eee !important; color: black !important; }
+    .page { display: none !important; }
+    #page-sales { display: block !important; }
+    .print-only { display: block !important; margin-bottom: 20px; }
+  }
+  .print-only { display: none; }
+
   @media (max-width: 600px) {
     .topbar { justify-content: center; }
     .brand-block { width: 100%; justify-content: center; }
@@ -110,7 +129,7 @@
     .page-header { flex-direction: column; align-items: flex-start !important; gap: 15px; }
     .page-header div { width: 100%; flex-direction: column; }
     .page-header select, .page-header button { width: 100% !important; }
-    .chart-container { height: 220px; } /* Slightly smaller chart on phones */
+    .chart-container { height: 220px; }
   }
 </style>
 </head>
@@ -258,7 +277,21 @@
     </div>
 
     <div class="page" id="page-sales">
-        <h2 style="font-family:'Playfair Display'; font-size:24px; margin-bottom:24px;">Sales Tracking</h2>
+        <div class="print-only">
+          <div style="display:flex; align-items:center; gap:20px; border-bottom: 2px solid var(--brown-dark); padding-bottom: 20px;">
+            <img src="https://lh3.googleusercontent.com/a-/ALV-UjUeccNPa_aqmec1NMIUVJMeteDoopgCvhS7ZnnmDET9Mu_HlBE=s400-p" width="80">
+            <div>
+              <h1 style="font-family:'Playfair Display';">Sweet Ted Cafe</h1>
+              <p>Official Sales Report | Generated on <span id="print-date"></span></p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+          <h2 style="font-family:'Playfair Display'; font-size:24px;">Sales Tracking</h2>
+          <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
+        </div>
+
         <div class="filter-bar">
           <div class="filter-group">
               <label class="form-label">Item</label>
@@ -288,10 +321,13 @@
         <div class="card" style="padding:0; overflow:hidden;">
           <div class="table-container">
             <table>
-                <thead><tr><th>Item</th><th>Batch Date</th><th>Destination</th><th>Qty</th><th>Remaining</th><th>Price</th><th>Total</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Item</th><th>Batch Date</th><th>Destination</th><th>Qty</th><th>Remaining</th><th>Price</th><th>Total</th><th class="btn">Actions</th></tr></thead>
                 <tbody id="sales-table-body"></tbody>
             </table>
           </div>
+        </div>
+        <div class="print-only" style="margin-top:30px; text-align:right;">
+          <h3 id="print-total-sales" style="font-family:'Playfair Display';"></h3>
         </div>
     </div>
     </div>
@@ -453,10 +489,19 @@ function refreshDashboard() {
 function renderStats(sData, bData) {
   document.getElementById('d-ing').innerText = ingredients.length;
   document.getElementById('d-batch').innerText = bData.length;
+  
   const rev = sData.reduce((a, c) => a + c.total_revenue, 0);
   const cost = bData.reduce((a, c) => a + (c.total_cost || 0), 0);
-  document.getElementById('d-rev').innerText = "₱" + rev.toFixed(2);
-  document.getElementById('d-profit').innerText = "₱" + (rev - cost).toFixed(2);
+  const profit = rev - cost;
+
+  const revEl = document.getElementById('d-rev');
+  const profitEl = document.getElementById('d-profit');
+
+  revEl.innerText = "₱" + rev.toFixed(2);
+  revEl.className = "stat-val " + (rev > 0 ? "val-pos" : "val-neg");
+
+  profitEl.innerText = "₱" + profit.toFixed(2);
+  profitEl.className = "stat-val " + (profit > 0 ? "val-pos" : "val-neg");
 }
 
 function renderInsights(sData) {
@@ -486,12 +531,7 @@ function renderSalesChart(sData) {
     salesChart = new Chart(ctx, {
         type: 'line',
         data: { labels: Object.keys(dataMap), datasets: [{ data: Object.values(dataMap), borderColor: '#4a6d55', fill: true, tension: 0.4 }] },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, // ALLOWS FILLING CONTAINER
-            plugins: { legend: { display: false } }, 
-            scales: { y: { beginAtZero: true } } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 }
 
@@ -624,7 +664,7 @@ async function handleSaveBatch(event) {
     suggested_price: parseFloat(document.getElementById('sum-suggested').innerText.replace('₱','')),
     markup_percent: parseFloat(document.getElementById('b-markup').value), markup_value: parseFloat(document.getElementById('sum-markup-val').innerText.replace('₱','')), ingredients_used: ingredientsUsed
   };
-  let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('ingredients').insert([data]);
+  let { error } = id ? await _sb.from('batches').update(data).eq('id', id) : await _sb.from('batches').insert([data]);
   if (error) alert(error.message); else { closeModal('modal-batch'); loadData(); }
 }
 
@@ -691,7 +731,14 @@ function updateSalesItemDropdown() {
 
 function renderSales(sData) {
   const body = document.getElementById('sales-table-body');
-  if (body) body.innerHTML = sData.map(s => `<tr><td><b>${s.item_name}</b></td><td>${s.batches?.date || 'N/A'}</td><td><span style="font-size:11px; background:var(--sage-bg); padding:2px 6px; border-radius:4px; color:var(--sage); font-weight:700;">${s.batches?.destination || 'N/A'}</span></td><td>${s.qty_sold}</td><td style="font-weight:bold; color:var(--sage)">${(s.batches?.yield_pcs || 0) - s.qty_sold}</td><td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td><td><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
+  if (body) {
+    body.innerHTML = sData.map(s => `<tr><td><b>${s.item_name}</b></td><td>${s.batches?.date || 'N/A'}</td><td><span style="font-size:11px; background:var(--sage-bg); padding:2px 6px; border-radius:4px; color:var(--sage); font-weight:700;">${s.batches?.destination || 'N/A'}</span></td><td>${s.qty_sold}</td><td style="font-weight:bold; color:var(--sage)">${(s.batches?.yield_pcs || 0) - s.qty_sold}</td><td>₱${s.unit_price.toFixed(2)}</td><td>₱${s.total_revenue.toFixed(2)}</td><td class="btn"><button class="action-btn btn-del" onclick="deleteItem('sales',${s.id})">Del</button></td></tr>`).join('');
+    
+    // Prepare Print Data
+    const totalRev = sData.reduce((a,c) => a + c.total_revenue, 0);
+    document.getElementById('print-date').innerText = new Date().toLocaleDateString('en-PH', { dateStyle: 'long' });
+    document.getElementById('print-total-sales').innerText = "Total Revenue: ₱" + totalRev.toLocaleString(undefined, {minimumFractionDigits: 2});
+  }
 }
 
 async function deleteItem(tbl, id) { if(confirm("Delete?")) { await _sb.from(tbl).delete().eq('id', id); loadData(); } }
