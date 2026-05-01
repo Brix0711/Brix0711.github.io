@@ -916,26 +916,44 @@ function updateBatchCodePreview() {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-// ─── BARISTA AUTH (sessionStorage based) ─────────────────────────────────────
+// ─── BARISTA AUTH (Supabase email-based) ─────────────────────────────────────
 const BARISTA_PASSWORD = 'SweetTed@Barista2026'; // ← CHANGE THIS LINE TO UPDATE BARISTA PASSWORD
+const BARISTA_EMAIL = 'mwfp20@gmail.com'; // ← Barista account email in Supabase
 function openBaristaLogin() {
   document.getElementById('barista-login-box').style.display = 'block';
   document.getElementById('barista-pw').focus();
 }
-function handleBaristaLogin() {
+async function handleBaristaLogin() {
   const pw = document.getElementById('barista-pw').value;
-  if (pw === BARISTA_PASSWORD) {
-    sessionStorage.setItem('st_barista', '1');
-    location.reload();
-  } else {
+  if (pw !== BARISTA_PASSWORD) {
     document.getElementById('barista-error').style.display = 'block';
+    return;
   }
+  // Sign into Supabase using the dedicated barista email so RLS / auth.uid() works
+  const { error } = await _sb.auth.signInWithPassword({
+    email: BARISTA_EMAIL,
+    password: pw
+  });
+  if (error) {
+    const el = document.getElementById('barista-error');
+    el.style.display = 'block';
+    el.innerText = 'Barista sign-in failed: ' + error.message;
+    return;
+  }
+  sessionStorage.setItem('st_barista', '1');
+  location.reload();
 }
 
 async function checkUser() {
-  const isBarista = sessionStorage.getItem('st_barista') === '1';
   const { data: { user } } = await _sb.auth.getUser();
-  if (user || isBarista) {
+  // Barista mode = signed in as the barista email (sessionStorage is just a hint)
+  const isBarista = !!(user && user.email && user.email.toLowerCase() === BARISTA_EMAIL.toLowerCase());
+  if (isBarista) {
+    sessionStorage.setItem('st_barista', '1');
+  } else {
+    sessionStorage.removeItem('st_barista');
+  }
+  if (user) {
     document.getElementById('auth-container').style.display = 'none';
     document.getElementById('app-wrapper').style.display = 'flex';
     if (isBarista) {
@@ -943,12 +961,18 @@ async function checkUser() {
       document.getElementById('nav-eod').style.display = 'inline-flex';
       // default land on EOD page
       setTimeout(() => { try { showPage('eod', true); } catch(e){} }, 50);
+    } else {
+      // Admin: make sure barista-mode is OFF so all admin tabs are visible
+      document.body.classList.remove('barista-mode');
+      document.getElementById('nav-eod').style.display = 'none';
     }
     loadData();
   }
 }
 async function handleLogin(e) {
   e.preventDefault();
+  // Admin login path — clear any leftover barista flag first
+  sessionStorage.removeItem('st_barista');
   const { error } = await _sb.auth.signInWithPassword({
     email: document.getElementById('login-email').value,
     password: document.getElementById('login-password').value
