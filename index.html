@@ -1143,7 +1143,6 @@ async function handleSaveBatch(event) {
   const nameSel = document.getElementById('b-name').value;
   const finalName = nameSel === 'Others' ? document.getElementById('b-name-manual').value : nameSel;
   const date = document.getElementById('b-date').value;
-  const batchCode = generateBatchCode(date);
   const ingredientsUsed = [];
   document.querySelectorAll('.ing-usage-row').forEach(row => {
     const sel = row.querySelector('.use-sel'), q = parseFloat(row.querySelector('.use-qty').value);
@@ -1151,7 +1150,6 @@ async function handleSaveBatch(event) {
   });
   const data = {
     name: finalName, date,
-    batch_code: batchCode,
     yield_pcs: parseFloat(document.getElementById('b-yield').value),
     labor_cost: parseFloat(document.getElementById('b-labor').value),
     overhead_cost: parseFloat(document.getElementById('b-overhead').value),
