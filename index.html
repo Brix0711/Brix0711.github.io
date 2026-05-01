@@ -315,12 +315,16 @@
     <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
     <button type="button" class="btn btn-ghost" onclick="openBaristaLogin()" style="width:100%; justify-content:center;">👩‍🍳 Barista Login</button>
 
-    <!-- Barista login modal-ish overlay -->
-    <div id="barista-login-box" style="display:none; margin-top:15px; padding:15px; background:var(--gold-bg); border-radius:10px; border:1px solid #e8ddb5;">
-      <label class="form-label" style="text-align:left;">Barista Password</label>
-      <input type="password" id="barista-pw" class="form-input" placeholder="Enter barista password">
+    <!-- Barista login (separate email + password) -->
+    <div id="barista-login-box" style="display:none; margin-top:15px; padding:15px; background:var(--gold-bg); border-radius:10px; border:1px solid #e8ddb5; text-align:left;">
+      <h3 style="font-family:'Playfair Display'; margin:0 0 10px; text-align:center;">Barista Login</h3>
+      <label class="form-label">Barista Email</label>
+      <input type="email" id="barista-email" class="form-input" placeholder="barista@email.com" autocomplete="username">
+      <label class="form-label">Barista Password</label>
+      <input type="password" id="barista-pw" class="form-input" placeholder="Enter password" autocomplete="current-password">
       <button type="button" class="btn btn-primary" onclick="handleBaristaLogin()" style="width:100%; justify-content:center; margin-top:8px;">Sign In as Barista</button>
-      <p id="barista-error" style="color:var(--rose); font-size:12px; margin-top:8px; display:none;">Wrong password.</p>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('barista-login-box').style.display='none'" style="width:100%; justify-content:center; margin-top:6px; font-size:12px;">Cancel</button>
+      <p id="barista-error" style="color:var(--rose); font-size:12px; margin-top:8px; display:none;"></p>
     </div>
   </div>
 </div>
@@ -916,62 +920,55 @@ function updateBatchCodePreview() {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-// ─── BARISTA AUTH (Supabase email-based) ─────────────────────────────────────
-const BARISTA_PASSWORD = 'SweetTed@Barista2026'; // ← CHANGE THIS LINE TO UPDATE BARISTA PASSWORD
-const BARISTA_EMAIL = 'mwfp20@gmail.com'; // ← Barista account email in Supabase
+// Barista identity is decided ONLY at the moment a user signs in via the
+// Barista form. We store that decision in sessionStorage so admin sign-ins
+// are never misclassified — no matter what email they use.
 function openBaristaLogin() {
   document.getElementById('barista-login-box').style.display = 'block';
-  document.getElementById('barista-pw').focus();
+  const emailEl = document.getElementById('barista-email');
+  if (emailEl) emailEl.focus();
 }
 async function handleBaristaLogin() {
+  const email = (document.getElementById('barista-email').value || '').trim();
   const pw = document.getElementById('barista-pw').value;
-  if (pw !== BARISTA_PASSWORD) {
-    document.getElementById('barista-error').style.display = 'block';
+  const errEl = document.getElementById('barista-error');
+  errEl.style.display = 'none';
+  if (!email || !pw) {
+    errEl.innerText = 'Please enter both email and password.';
+    errEl.style.display = 'block';
     return;
   }
-  // Sign into Supabase using the dedicated barista email so RLS / auth.uid() works
-  const { error } = await _sb.auth.signInWithPassword({
-    email: BARISTA_EMAIL,
-    password: pw
-  });
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
   if (error) {
-    const el = document.getElementById('barista-error');
-    el.style.display = 'block';
-    el.innerText = 'Barista sign-in failed: ' + error.message;
+    errEl.innerText = 'Barista sign-in failed: ' + error.message;
+    errEl.style.display = 'block';
     return;
   }
+  // Mark this session as a barista session (only set here)
   sessionStorage.setItem('st_barista', '1');
   location.reload();
 }
 
 async function checkUser() {
   const { data: { user } } = await _sb.auth.getUser();
-  // Barista mode = signed in as the barista email (sessionStorage is just a hint)
-  const isBarista = !!(user && user.email && user.email.toLowerCase() === BARISTA_EMAIL.toLowerCase());
+  if (!user) return; // stay on login screen
+  const isBarista = sessionStorage.getItem('st_barista') === '1';
+  document.getElementById('auth-container').style.display = 'none';
+  document.getElementById('app-wrapper').style.display = 'flex';
   if (isBarista) {
-    sessionStorage.setItem('st_barista', '1');
+    document.body.classList.add('barista-mode');
+    document.getElementById('nav-eod').style.display = 'inline-flex';
+    setTimeout(() => { try { showPage('eod', true); } catch(e){} }, 50);
   } else {
-    sessionStorage.removeItem('st_barista');
+    // Admin: force all admin menus visible
+    document.body.classList.remove('barista-mode');
+    document.getElementById('nav-eod').style.display = 'none';
   }
-  if (user) {
-    document.getElementById('auth-container').style.display = 'none';
-    document.getElementById('app-wrapper').style.display = 'flex';
-    if (isBarista) {
-      document.body.classList.add('barista-mode');
-      document.getElementById('nav-eod').style.display = 'inline-flex';
-      // default land on EOD page
-      setTimeout(() => { try { showPage('eod', true); } catch(e){} }, 50);
-    } else {
-      // Admin: make sure barista-mode is OFF so all admin tabs are visible
-      document.body.classList.remove('barista-mode');
-      document.getElementById('nav-eod').style.display = 'none';
-    }
-    loadData();
-  }
+  loadData();
 }
 async function handleLogin(e) {
   e.preventDefault();
-  // Admin login path — clear any leftover barista flag first
+  // Admin login path — explicitly clear any barista flag
   sessionStorage.removeItem('st_barista');
   const { error } = await _sb.auth.signInWithPassword({
     email: document.getElementById('login-email').value,
