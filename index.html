@@ -2414,7 +2414,27 @@ function recomputeEODTotals() {
   set('eod-total-sold', tSold);
 }
 
-function generateEODPDF() {
+const EOD_LOGO_URL = 'https://lh3.googleusercontent.com/a-/ALV-UjUeccNPa_aqmec1NMIUVJMeteDoopgCvhS7ZnnmDET9Mu_HlBE=s400-p';
+let _eodLogoDataUrl = null;
+async function _loadEODLogo() {
+  if (_eodLogoDataUrl) return _eodLogoDataUrl;
+  try {
+    const res = await fetch(EOD_LOGO_URL, { mode: 'cors' });
+    const blob = await res.blob();
+    _eodLogoDataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+    return _eodLogoDataUrl;
+  } catch (e) {
+    console.warn('Logo load failed', e);
+    return null;
+  }
+}
+
+async function generateEODPDF() {
   if (!window.jspdf) { alert('PDF library not loaded.'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -2425,35 +2445,22 @@ function generateEODPDF() {
   const batchF = document.getElementById('eod-batch-filter').value;
   const itemF  = document.getElementById('eod-item-filter').value;
 
-  // ─── Logo (vector bear) for branding ──────────────────────────────
-  // Draw a small circular brown bear logo in the top-left corner
-  const lx = 18, ly = 22, lr = 9;            // logo center x, y, radius
-  // Outer light ring
-  doc.setFillColor(240, 226, 178); doc.circle(lx, ly, lr + 1.2, 'F');
-  // Bear ears
-  doc.setFillColor(120, 80, 50);
-  doc.circle(lx - 5.5, ly - 6, 2.4, 'F');
-  doc.circle(lx + 5.5, ly - 6, 2.4, 'F');
-  // Bear head
-  doc.setFillColor(150, 100, 65); doc.circle(lx, ly, lr, 'F');
-  // Muzzle
-  doc.setFillColor(245, 222, 179); doc.ellipse(lx, ly + 2.2, 4.2, 3, 'F');
-  // Eyes
-  doc.setFillColor(30, 20, 15);
-  doc.circle(lx - 2.6, ly - 1.4, 0.7, 'F');
-  doc.circle(lx + 2.6, ly - 1.4, 0.7, 'F');
-  // Nose
-  doc.circle(lx, ly + 1.2, 0.9, 'F');
+  // ─── Logo for branding ──────────────────────────────
+  const logoData = await _loadEODLogo();
+  if (logoData) {
+    try {
+      const fmt = logoData.includes('image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(logoData, fmt, 12, 10, 20, 20);
+    } catch (e) { console.warn('addImage failed', e); }
+  }
 
   // Header (shifted right to make room for logo)
   doc.setFontSize(18); doc.setTextColor(30, 45, 36);
-  doc.text('Sweet Ted Cafe — End of Day Report', 32, 18);
-  doc.setFontSize(9); doc.setTextColor(120, 90, 60);
-  doc.text('Brewed with love ☕', 32, 24);
+  doc.text('Sweet Ted Cafe — End of Day Report', 36, 18);
   doc.setFontSize(10); doc.setTextColor(100);
-  doc.text(`Barista: ${barista}`, 32, 30);
-  doc.text(`Period: ${fromD} to ${toD}`, 32, 36);
-  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 32, 42);
+  doc.text(`Barista: ${barista}`, 36, 26);
+  doc.text(`Period: ${fromD} to ${toD}`, 36, 32);
+  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 36, 38);
   if (batchF) doc.text(`Batch Filter: ${batchF}`, 14, 48);
   if (itemF)  doc.text(`Item Filter: ${itemF}`, 110, 48);
 
