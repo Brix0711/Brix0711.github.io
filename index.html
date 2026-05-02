@@ -474,7 +474,7 @@
         <p style="font-size:12px; color:var(--text-muted); margin-top:5px;">Manually enter the start of day and end of shift counts for each item. "Items Used" is auto-computed.</p>
         <div style="overflow-x:auto;">
           <table class="eod-table" id="eod-inv-table">
-            <thead><tr><th>Item Name</th><th>Start of Day Count</th><th>End of Shift Count</th><th>Items Left</th><th>Items Sold</th></tr></thead>
+            <thead><tr><th>Item / Flavor</th><th>Start of Day Count</th><th>End of Shift Count</th><th>Items Left</th><th>Items Sold</th></tr></thead>
             <tbody id="eod-inv-body"></tbody>
             <tfoot><tr style="background:var(--gold-bg); font-weight:700;">
               <td style="text-align:right;">TOTALS</td>
@@ -773,7 +773,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">DATE</label><input type="date" id="b-date" class="form-input" required onchange="updateBatchCodePreview()"></div>
-        <div class="form-group"><label class="form-label">YIELD (PCS)</label><input type="number" id="b-yield" class="form-input" oninput="calculateBatch(); checkFlavorYieldSum();" required></div>
+        <div class="form-group"><label class="form-label">YIELD (PCS)</label><input type="number" id="b-yield" class="form-input" oninput="scaleBatchIngredientsToYield(this); calculateBatch(); checkFlavorYieldSum();" required></div>
       </div>
       <div class="form-group" style="margin-bottom:15px;">
         <label class="form-label">BATCH ID (auto-generated)</label>
@@ -1349,6 +1349,7 @@ function handleBatchSelect() {
     else if (name === 'Brownies') { document.getElementById('b-yield').value = 12; document.getElementById('b-markup').value = 50; }
     else if (name === 'Crinkles') { document.getElementById('b-yield').value = 10; document.getElementById('b-markup').value = 53; }
   }
+  setBatchYieldBaseline();
   calculateBatch();
 }
 
@@ -1389,6 +1390,33 @@ function calculateBatch() {
   document.getElementById('sum-markup-val').innerText = '₱' + markupValue.toFixed(2);
   document.getElementById('sum-total').innerText = '₱' + totalProductionCost.toFixed(2);
   document.getElementById('sum-suggested').innerText = '₱' + (finalSalesTotal / yieldPcs).toFixed(2);
+}
+
+// Auto-scale ingredient quantities proportionally when YIELD changes.
+// Uses the yield input's data-prev-yield as the baseline. Updates baseline after scaling.
+function scaleBatchIngredientsToYield(yieldInput) {
+  const newY = parseFloat(yieldInput.value);
+  const prevY = parseFloat(yieldInput.dataset.prevYield);
+  if (!newY || newY <= 0 || !prevY || prevY <= 0 || newY === prevY) {
+    if (newY > 0) yieldInput.dataset.prevYield = String(newY);
+    return;
+  }
+  const factor = newY / prevY;
+  document.querySelectorAll('.ing-usage-row .use-qty').forEach(qtyEl => {
+    const cur = parseFloat(qtyEl.value);
+    if (!isNaN(cur) && cur > 0) {
+      const scaled = cur * factor;
+      // Round to 4 decimals to avoid float noise
+      qtyEl.value = Math.round(scaled * 10000) / 10000;
+    }
+  });
+  yieldInput.dataset.prevYield = String(newY);
+}
+
+// Set the baseline yield used for ingredient auto-scaling.
+function setBatchYieldBaseline() {
+  const el = document.getElementById('b-yield');
+  if (el) el.dataset.prevYield = el.value || '';
 }
 
 async function handleSaveBatch(event) {
@@ -1448,6 +1476,7 @@ function openBatchModal(id = null, duplicate = false) {
     getBatchVariants(b).forEach(v => addVariantRow(v.name, v.price_delta));
     checkFlavorYieldSum();
     document.getElementById('batch-code-preview').textContent = getBatchCode(b);
+    setBatchYieldBaseline();
     calculateBatch();
   } else {
     document.getElementById('b-date').value = new Date().toISOString().split('T')[0];
@@ -2316,7 +2345,7 @@ async function initEODPage() {
 async function loadEODBatchesFromDatabase() {
   const { data, error } = await _sb
     .from('batches')
-    .select('id, name, batch_code, date, created_at')
+    .select('id, name, batch_code, date, created_at, flavors')
     .not('name', 'is', null)
     .order('created_at', { ascending: false });
 
@@ -2354,39 +2383,71 @@ function loadEODInventoryRows() {
   const tbody = document.getElementById('eod-inv-body');
   if (!tbody) return;
 
-  // Source is the batches table. SQL equivalent:
-  // SELECT id, name, batch_code, date, created_at
-  // FROM public.batches
-  // WHERE name IS NOT NULL
-  // ORDER BY created_at DESC;
+  // Source: batches table. Item name + flavors are pulled from batches.
   const batchF = (document.getElementById('eod-batch-filter')?.value || '').trim();
   const itemF  = (document.getElementById('eod-item-filter')?.value  || '').trim();
   let source = (batches || []).filter(b => b && b.name);
   if (batchF) source = source.filter(b => (b.batch_code || '') === batchF);
   if (itemF)  source = source.filter(b => b.name === itemF);
 
-  // De-duplicate by item name so each item appears once, even across many batches.
-  const seen = new Set();
-  const items = [];
+  // Group by item name; collect all unique flavor names across batches of the same item.
+  const itemMap = new Map(); // name -> { name, batch_code, flavors: Set<string> }
   source.forEach(b => {
-    const key = String(b.name).trim().toLowerCase();
-    if (!seen.has(key)) { seen.add(key); items.push(b); }
+    const key = String(b.name).trim();
+    if (!itemMap.has(key)) {
+      itemMap.set(key, { name: b.name, batch_code: b.batch_code || '', flavors: new Set() });
+    }
+    const entry = itemMap.get(key);
+    (getBatchFlavors(b) || []).forEach(f => {
+      if (f && f.name && String(f.name).trim()) entry.flavors.add(String(f.name).trim());
+    });
   });
 
-  if (!items.length) {
+  if (!itemMap.size) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:14px;">No items found in batches table for the selected filters.</td></tr>';
+    recomputeEODTotals();
     return;
   }
 
-  tbody.innerHTML = items.map((b, i) => `
-    <tr data-idx="${i}" data-name="${escapeHtml(b.name)}">
-      <td><b>${escapeHtml(b.name)}</b>${b.batch_code ? ` <span style="color:var(--text-muted); font-size:11px;">(${escapeHtml(b.batch_code)})</span>` : ''}</td>
-      <td><input type="number" min="0" step="any" class="eod-start" oninput="recomputeEODRow(this)"></td>
-      <td><input type="number" min="0" step="any" class="eod-end" oninput="recomputeEODRow(this)"></td>
-      <td class="computed eod-left">—</td>
-      <td class="computed eod-used">—</td>
-    </tr>
-  `).join('');
+  const html = [];
+  [...itemMap.values()].forEach(it => {
+    const flavors = [...it.flavors];
+    if (flavors.length === 0) {
+      // Item with no flavors — single row, counted in totals.
+      html.push(`
+        <tr data-name="${escapeHtml(it.name)}" data-flavor="">
+          <td><b>${escapeHtml(it.name)}</b>${it.batch_code ? ` <span style="color:var(--text-muted); font-size:11px;">(${escapeHtml(it.batch_code)})</span>` : ''}</td>
+          <td><input type="number" min="0" step="any" class="eod-start" oninput="recomputeEODRow(this)"></td>
+          <td><input type="number" min="0" step="any" class="eod-end" oninput="recomputeEODRow(this)"></td>
+          <td class="computed eod-left">—</td>
+          <td class="computed eod-used">—</td>
+        </tr>
+      `);
+    } else {
+      // Header row for the item (no inputs, not counted).
+      html.push(`
+        <tr class="eod-item-header" data-name="${escapeHtml(it.name)}">
+          <td colspan="5" style="background:var(--sage-bg); color:var(--brown-dark); font-weight:700;">
+            ${escapeHtml(it.name)}${it.batch_code ? ` <span style="color:var(--text-muted); font-size:11px; font-weight:400;">(${escapeHtml(it.batch_code)})</span>` : ''}
+          </td>
+        </tr>
+      `);
+      // One sub-row per flavor — these ARE counted in totals.
+      flavors.forEach(fName => {
+        html.push(`
+          <tr data-name="${escapeHtml(it.name)}" data-flavor="${escapeHtml(fName)}">
+            <td style="padding-left:28px;">↳ <span style="color:var(--rose); font-weight:600;">${escapeHtml(fName)}</span></td>
+            <td><input type="number" min="0" step="any" class="eod-start" oninput="recomputeEODRow(this)"></td>
+            <td><input type="number" min="0" step="any" class="eod-end" oninput="recomputeEODRow(this)"></td>
+            <td class="computed eod-left">—</td>
+            <td class="computed eod-used">—</td>
+          </tr>
+        `);
+      });
+    }
+  });
+
+  tbody.innerHTML = html.join('');
   recomputeEODTotals();
 }
 function recomputeEODRow(input) {
