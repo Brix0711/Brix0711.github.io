@@ -1268,9 +1268,9 @@ function showPage(p, programmatic) {
   if (!programmatic && typeof event !== 'undefined' && event && event.currentTarget) event.currentTarget.classList.add('active');
   if (p === 'pos') { renderPOSTiles(); renderPOSCart(); }
   if (p === 'eod') { initEODPage(); }
-  // Bear mascot only on dashboard
+  // Bear mascot on dashboard (admin) and EOD page (barista)
   const bear = document.getElementById('bear-mascot');
-  if (bear) bear.style.display = (p === 'dashboard' && !document.body.classList.contains('barista-mode')) ? 'flex' : 'none';
+  if (bear) bear.style.display = (p === 'dashboard' || p === 'eod') ? 'flex' : 'none';
 }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -2285,12 +2285,13 @@ function rotateBearQuote() {
 }
 setInterval(rotateBearQuote, 8000);
 rotateBearQuote();
-// Show bear initially if on dashboard
+// Show bear initially if on dashboard or EOD page
 window.addEventListener('load', () => {
   setTimeout(() => {
     const bear = document.getElementById('bear-mascot');
     const dash = document.getElementById('page-dashboard');
-    if (bear && dash && dash.classList.contains('active') && !document.body.classList.contains('barista-mode')) {
+    const eod  = document.getElementById('page-eod');
+    if (bear && ((dash && dash.classList.contains('active')) || (eod && eod.classList.contains('active')))) {
       bear.style.display = 'flex';
     }
   }, 200);
@@ -2424,17 +2425,43 @@ function generateEODPDF() {
   const batchF = document.getElementById('eod-batch-filter').value;
   const itemF  = document.getElementById('eod-item-filter').value;
 
-  // Header
-  doc.setFontSize(18); doc.setTextColor(30, 45, 36);
-  doc.text('Sweet Ted Cafe — End of Day Report', 14, 18);
-  doc.setFontSize(10); doc.setTextColor(100);
-  doc.text(`Barista: ${barista}`, 14, 26);
-  doc.text(`Period: ${fromD} to ${toD}`, 14, 32);
-  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 38);
-  if (batchF) doc.text(`Batch Filter: ${batchF}`, 14, 44);
-  if (itemF)  doc.text(`Item Filter: ${itemF}`, 110, 44);
+  // ─── Logo (vector bear) for branding ──────────────────────────────
+  // Draw a small circular brown bear logo in the top-left corner
+  const lx = 18, ly = 22, lr = 9;            // logo center x, y, radius
+  // Outer light ring
+  doc.setFillColor(240, 226, 178); doc.circle(lx, ly, lr + 1.2, 'F');
+  // Bear ears
+  doc.setFillColor(120, 80, 50);
+  doc.circle(lx - 5.5, ly - 6, 2.4, 'F');
+  doc.circle(lx + 5.5, ly - 6, 2.4, 'F');
+  // Bear head
+  doc.setFillColor(150, 100, 65); doc.circle(lx, ly, lr, 'F');
+  // Muzzle
+  doc.setFillColor(245, 222, 179); doc.ellipse(lx, ly + 2.2, 4.2, 3, 'F');
+  // Eyes
+  doc.setFillColor(30, 20, 15);
+  doc.circle(lx - 2.6, ly - 1.4, 0.7, 'F');
+  doc.circle(lx + 2.6, ly - 1.4, 0.7, 'F');
+  // Nose
+  doc.circle(lx, ly + 1.2, 0.9, 'F');
 
-  let y = 52;
+  // Header (shifted right to make room for logo)
+  doc.setFontSize(18); doc.setTextColor(30, 45, 36);
+  doc.text('Sweet Ted Cafe — End of Day Report', 32, 18);
+  doc.setFontSize(9); doc.setTextColor(120, 90, 60);
+  doc.text('Brewed with love ☕', 32, 24);
+  doc.setFontSize(10); doc.setTextColor(100);
+  doc.text(`Barista: ${barista}`, 32, 30);
+  doc.text(`Period: ${fromD} to ${toD}`, 32, 36);
+  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 32, 42);
+  if (batchF) doc.text(`Batch Filter: ${batchF}`, 14, 48);
+  if (itemF)  doc.text(`Item Filter: ${itemF}`, 110, 48);
+
+  // Divider line
+  doc.setDrawColor(92, 141, 97); doc.setLineWidth(0.5);
+  doc.line(14, 52, 196, 52);
+
+  let y = 58;
 
   // Inventory table
   const invRows = [];
